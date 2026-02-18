@@ -3,77 +3,173 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StockVision Pro - Live</title>
+  <title>StockVision Pro - Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
     :root {
       --primary: #2563eb;
-      --bg: #f8fafc;
+      --primary-dark: #1d4ed8;
+      --bg: #f1f5f9;
       --card-bg: #ffffff;
       --text-main: #1e293b;
+      --text-muted: #64748b;
       --border: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     body {
       font-family: 'Inter', sans-serif;
       background-color: var(--bg);
       color: var(--text-main);
-      margin: 0; padding: 0;
+      margin: 0;
+      padding: 0;
+      line-height: 1.5;
     }
 
     header {
       background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
       color: white;
-      padding: 40px 20px;
+      padding: 60px 20px 80px 20px;
       text-align: center;
     }
 
+    header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+      font-weight: 600;
+      letter-spacing: -1px;
+    }
+
+    header p {
+      opacity: 0.8;
+      margin-top: 10px;
+      font-weight: 300;
+    }
+
     main {
-      padding: 30px 20px;
-      max-width: 1100px;
+      padding: 0 20px 50px 20px;
+      max-width: 1200px;
       margin: auto;
     }
 
+    /* Barra di ricerca migliorata */
     .search-container {
-      display: flex; gap: 10px;
+      display: flex;
+      gap: 15px;
       background: var(--card-bg);
-      padding: 15px; border-radius: 12px;
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-      margin-top: -50px; /* Effetto sovrapposizione */
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      margin-top: -45px; /* Sovrapposizione all'header */
+      border: 1px solid var(--border);
     }
 
     input[type="text"] {
-      flex-grow: 1; padding: 15px; border: 2px solid var(--border); border-radius: 8px; font-size: 16px; outline: none;
+      flex-grow: 1;
+      padding: 15px 20px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
     }
 
     button {
-      padding: 0 30px; font-weight: 600; border: none; border-radius: 8px;
-      background: var(--primary); color: white; cursor: pointer; transition: 0.2s;
+      padding: 0 35px;
+      font-weight: 600;
+      font-size: 16px;
+      border: none;
+      border-radius: 12px;
+      background: var(--primary);
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
     }
 
-    button:hover { background: #1d4ed8; }
+    button:hover {
+      background: var(--primary-dark);
+    }
 
+    button:active {
+      transform: scale(0.98);
+    }
+
+    /* Griglia risultati con più spazio */
     #results {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-top: 30px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 25px;
+      margin: 50px 0;
     }
 
     .result-item {
-      padding: 15px; background: white; border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
-      transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      padding: 20px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
-    .result-item:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+    .result-item:hover {
+      border-color: var(--primary);
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+    }
 
-    #chart { margin-top: 30px; border-radius: 12px; overflow: hidden; background: white; min-height: 550px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+    .result-item strong {
+      font-size: 1.2rem;
+      color: var(--primary);
+      margin-bottom: 5px;
+    }
 
-    .error-msg { color: #dc2626; background: #fee2e2; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center; }
+    .result-item small {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* Contenitore Grafico spazioso */
+    #chart-wrapper {
+      margin-top: 40px;
+      background: white;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--border);
+      min-height: 640px;
+    }
+
+    #chart {
+      height: 600px;
+      width: 100%;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .loader-text {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      margin: 40px 0;
+    }
   </style>
 </head>
 <body>
 
 <header>
   <h1>StockVision Pro</h1>
-  <p>Dati di mercato in tempo reale</p>
+  <p>Analisi tecnica e dati globali in tempo reale</p>
 </header>
 
 <main>
@@ -83,12 +179,20 @@
   </div>
 
   <div id="results"></div>
-  <div id="chart"></div>
+
+  <div id="chart-wrapper">
+    <div id="chart">
+       <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #94a3b8; font-weight: 300;">
+         Seleziona un'azienda per visualizzare il grafico
+       </div>
+    </div>
+  </div>
 </main>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
+
 <script>
-  // La tua chiave personale inserita correttamente
+  // La tua chiave API Finnhub
   const apiKey = "d6b3blpr01qnr27jgq90d6b3blpr01qnr27jgq9g";
 
   async function searchStock() {
@@ -96,32 +200,40 @@
     const resultsDiv = document.getElementById("results");
 
     if (!query) return;
-    resultsDiv.innerHTML = "<p>Ricerca in corso...</p>";
+
+    resultsDiv.innerHTML = '<div class="loader-text">Sto interrogando i mercati...</div>';
 
     try {
       const response = await fetch(`https://finnhub.io/api/v1/search?q=${query}&token=${apiKey}`);
       const data = await response.json();
 
-      if (!response.ok) throw new Error("Errore API. Controlla la chiave.");
+      if (!response.ok) throw new Error("Errore nella comunicazione con il server.");
 
       resultsDiv.innerHTML = "";
+      
       if (data.count === 0) {
-        resultsDiv.innerHTML = "<p>Nessun risultato. Prova con un simbolo (es. AAPL).</p>";
+        resultsDiv.innerHTML = '<div class="loader-text">Nessun risultato trovato. Prova con un simbolo diverso.</div>';
         return;
       }
 
+      // Mostriamo i primi 8 risultati
       data.result.slice(0, 8).forEach(item => {
         const div = document.createElement("div");
         div.className = "result-item";
-        div.innerHTML = `<strong>${item.symbol}</strong><br><small>${item.description}</small>`;
+        div.innerHTML = `
+          <strong>${item.symbol}</strong>
+          <small>${item.description}</small>
+        `;
         div.onclick = () => {
           loadChart(item.symbol);
-          window.scrollTo({ top: 450, behavior: 'smooth' });
+          // Scroll fluido verso il grafico
+          document.getElementById('chart-wrapper').scrollIntoView({ behavior: 'smooth', block: 'center' });
         };
         resultsDiv.appendChild(div);
       });
+
     } catch (error) {
-      resultsDiv.innerHTML = `<div class="error-msg">⚠️ Errore: ${error.message}</div>`;
+      resultsDiv.innerHTML = `<div style="color: #dc2626; text-align: center; width: 100%;">⚠️ Errore: ${error.message}</div>`;
     }
   }
 
@@ -137,7 +249,12 @@
       "locale": "it",
       "toolbar_bg": "#f1f3f6",
       "enable_publishing": false,
+      "withdateranges": true,
+      "hide_side_toolbar": false,
       "allow_symbol_change": true,
+      "details": true,
+      "hotlist": true,
+      "calendar": true,
       "container_id": "chart"
     });
   }
@@ -145,4 +262,3 @@
 
 </body>
 </html>
-
