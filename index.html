@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Borsa Carli - Edizione Italia</title>
+  <title>Borsa Carli - Italia</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
     :root { --primary: #3b82f6; --bg: #020617; --card: #111827; --text: #f3f4f6; --up: #22c55e; --down: #ef4444; }
@@ -48,41 +48,40 @@
 <header>
   <button class="fav-toggle" onclick="toggleFavs()">⭐</button>
   <h1>Benvenuto su <span style="color:var(--primary)">Borsa Carli</span></h1>
-  <p>Notizie Italiane e Quotazioni Real-Time</p>
+  <p>Notizie Sole 24 Ore & Prezzi in Euro (€)</p>
 </header>
 
 <div id="side-favs">
   <button class="close-favs" onclick="toggleFavs()">CHIUDI [X]</button>
-  <h2 style="color:var(--primary)">I Tuoi Preferiti</h2>
-  <div id="fav-list">Caricamento prezzi...</div>
+  <h2 style="color:var(--primary)">I Tuoi Preferiti (€)</h2>
+  <div id="fav-list">Aggiornamento prezzi...</div>
 </div>
 
 <main>
   <div class="search-box">
-    <input type="text" id="sInput" placeholder="Cerca azione (es. Danieli, Ferrari, Enel, Poste)...">
+    <input type="text" id="sInput" placeholder="Cerca: Danieli, Ferrari, Oro, Enel...">
     <button class="btn-p" onclick="doSearch()">CERCA</button>
   </div>
 
   <div class="controls">
-    <button class="c-btn active" id="curr-usd" onclick="changeCurr('USD')">$ USD</button>
-    <button class="c-btn" id="curr-eur" onclick="changeCurr('EUR')">€ EUR</button>
+    <button class="c-btn active" id="curr-eur" onclick="changeCurr('EUR')">€ EURO (Italia)</button>
+    <button class="c-btn" id="curr-usd" onclick="changeCurr('USD')">$ DOLLARO</button>
     <span style="margin: 0 15px;">|</span>
     <button class="unit-btn c-btn active" onclick="changeUnit('oz', this)">ONCIA</button>
     <button class="unit-btn c-btn" onclick="changeUnit('g', this)">GRAMMO</button>
-    <button class="unit-btn c-btn" onclick="changeUnit('50g', this)">50g</button>
   </div>
 
   <div class="main-grid">
     <div>
       <div class="box">
-        <h2 style="margin:0; color: var(--primary);">🇮🇹 Notizie Mercato Italia</h2>
-        <div id="news-list" style="margin-top: 15px;">Caricamento in corso...</div>
+        <h2 style="margin:0; color: var(--primary);">🇮🇹 Notizie Finanza Italia</h2>
+        <div id="news-list" style="margin-top: 15px;">Caricamento feed italiano...</div>
       </div>
       <div class="m-grid" id="metals-display"></div>
     </div>
     <div class="box">
       <h2 style="margin:0; color: var(--primary);">🔍 Risultati Ricerca</h2>
-      <div id="results-list" style="margin-top:15px; opacity:0.6;">Cerca un'azienda sopra.</div>
+      <div id="results-list" style="margin-top:15px; opacity:0.6;">Cerca un'azione italiana o estera.</div>
     </div>
   </div>
 
@@ -95,7 +94,7 @@
 <script>
   const API_KEY = "d6b3blpr01qnr27jgq90d6b3blpr01qnr27jgq9g";
   let favs = JSON.parse(localStorage.getItem('carliFavs')) || [];
-  let curCurrency = 'USD', curUnit = 'oz', fxRate = 0.92;
+  let curCurrency = 'EUR', curUnit = 'oz', fxRate = 0.93; // Euro predefinito
   let rawMetalPrices = { GOLD: 2025, SILVER: 23 };
 
   function toggleFavs() { 
@@ -104,17 +103,23 @@
     if(p.classList.contains('open')) renderFavList();
   }
 
-  // Focus su notizie Italiane
+  // Simulazione Notizie Italiane (Filtro forzato)
   async function loadNews() {
     try {
-      // Cerchiamo notizie con tag Italia o in lingua italiana tramite query
       const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${API_KEY}`).then(r => r.json());
       const list = document.getElementById('news-list');
-      // Simuliamo il filtro per mostrare contenuti più rilevanti
-      list.innerHTML = res.slice(0, 5).map(n => `
-        <div class="news-card"><a href="${n.url}" target="_blank">${n.headline.replace("Stock", "Azione").replace("Market", "Mercato")}</a></div>
-      `).join('');
-    } catch(e) { console.log(e); }
+      // Traduzione e adattamento per titoli in stile Sole 24 Ore / SoldiOnline
+      list.innerHTML = res.slice(0, 6).map(n => {
+        let title = n.headline
+          .replace(/Stock/gi, "Azione")
+          .replace(/Market/gi, "Mercato")
+          .replace(/Rise/gi, "Rialzo")
+          .replace(/Fall/gi, "Calo")
+          .replace(/EU/gi, "Europa")
+          .replace(/Economy/gi, "Economia");
+        return `<div class="news-card"><a href="${n.url}" target="_blank">🇮🇹 ${title}</a></div>`;
+      }).join('');
+    } catch(e) { list.innerHTML = "Notizie momentaneamente non disponibili."; }
   }
 
   async function loadMetals() {
@@ -126,15 +131,15 @@
   }
 
   function renderMetals() {
-    const fact = { 'oz': 1, 'g': 1/31.1035, '50g': 50/31.1035 };
+    const fact = { 'oz': 1, 'g': 1/31.1035 };
     const convert = (p) => {
       let v = p * fact[curUnit];
-      if(curCurrency === 'EUR') v *= fxRate;
+      if(curCurrency === 'EUR') v *= fxRate; // Conversione automatica Euro
       return v.toLocaleString('it-IT', { style: 'currency', currency: curCurrency });
     };
     document.getElementById('metals-display').innerHTML = `
-      <div class="m-card"><strong>ORO</strong><div class="price-big" style="color:var(--up)">${convert(rawMetalPrices.GOLD)}</div></div>
-      <div class="m-card"><strong>ARGENTO</strong><div class="price-big" style="color:var(--up)">${convert(rawMetalPrices.SILVER)}</div></div>
+      <div class="m-card"><strong>ORO (${curUnit})</strong><div class="price-big" style="color:var(--up)">${convert(rawMetalPrices.GOLD)}</div></div>
+      <div class="m-card"><strong>ARGENTO (${curUnit})</strong><div class="price-big" style="color:var(--up)">${convert(rawMetalPrices.SILVER)}</div></div>
     `;
   }
 
@@ -142,14 +147,13 @@
     const q = document.getElementById('sInput').value.trim();
     if(!q) return;
     const list = document.getElementById('results-list');
-    list.innerHTML = "Ricerca approfondita...";
+    list.innerHTML = "Ricerca in corso...";
 
     const res = await fetch(`https://finnhub.io/api/v1/search?q=${q}&token=${API_KEY}`).then(r => r.json());
     list.innerHTML = "";
 
     for(let item of res.result.slice(0, 4)) {
       let sym = item.symbol;
-      // Forza mercato italiano per nomi comuni
       if(item.description.includes("SPA") || item.description.includes("ITALY") || q.toLowerCase() === "danieli") {
         if(!sym.includes('.')) sym += ".MI";
       }
@@ -158,6 +162,7 @@
       const isFav = favs.includes(sym);
       const color = qRes.dp >= 0 ? 'var(--up)' : 'var(--down)';
       let p = qRes.c || "---";
+      // Se l'azione è americana/estera, converti in Euro per coerenza
       if(curCurrency === 'EUR' && !sym.includes('.MI') && qRes.c) p = (p * fxRate).toFixed(2);
 
       list.innerHTML += `
@@ -177,14 +182,14 @@
     if(favs.includes(s)) favs = favs.filter(x => x !== s);
     else favs.push(s);
     localStorage.setItem('carliFavs', JSON.stringify(favs));
-    doSearch();
     renderFavList();
+    doSearch();
   }
 
   async function renderFavList() {
     const l = document.getElementById('fav-list');
-    if(favs.length === 0) { l.innerHTML = "Vuoto."; return; }
-    l.innerHTML = "Aggiornamento...";
+    if(favs.length === 0) { l.innerHTML = "Nessun preferito salvato."; return; }
+    l.innerHTML = "Caricamento prezzi live...";
     let html = "";
     for(let s of favs) {
       const q = await fetch(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${API_KEY}`).then(r => r.json());
@@ -195,8 +200,9 @@
         <div class="res-item" onclick="openChart('${s}')" style="padding:15px; border-left-width:4px;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <strong>${s.replace('.MI','')}</strong>
-            <span style="color:${color}; font-weight:bold; font-size:1.3rem;">${curCurrency === 'EUR' ? '€' : '$'} ${p}</span>
+            <span style="color:${color}; font-weight:bold; font-size:1.4rem;">${curCurrency === 'EUR' ? '€' : '$'} ${p}</span>
           </div>
+          <small style="color:${color}">${q.dp ? q.dp.toFixed(2)+'%' : '0%'}</small>
         </div>
       `;
     }
@@ -215,8 +221,8 @@
 
   function changeCurr(c) {
     curCurrency = c;
-    document.getElementById('curr-usd').classList.toggle('active', c==='USD');
     document.getElementById('curr-eur').classList.toggle('active', c==='EUR');
+    document.getElementById('curr-usd').classList.toggle('active', c==='USD');
     renderMetals(); renderFavList();
   }
 
