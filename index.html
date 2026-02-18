@@ -3,178 +3,190 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StockVision Ultra - Pro Trader</title>
+  <title>StockVision Platinum - Italy & Metals</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
-    :root { --primary: #3b82f6; --bg: #0f172a; --card-bg: #1e293b; --text: #f8fafc; --border: #334155; }
+    :root { --primary: #3b82f6; --bg: #020617; --card: #1e293b; --text: #f8fafc; --up: #22c55e; --down: #ef4444; }
     * { box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
-    header { background: #020617; padding: 40px 20px; text-align: center; border-bottom: 2px solid var(--primary); }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+    
+    header { background: #0f172a; padding: 40px 20px; text-align: center; border-bottom: 3px solid var(--primary); }
     main { padding: 20px; max-width: 1400px; margin: auto; }
     
-    .search-bar { display: flex; gap: 10px; background: var(--card-bg); padding: 15px; border-radius: 15px; margin-top: -30px; border: 1px solid var(--border); }
-    input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #0f172a; color: white; outline: none; }
-    button { padding: 10px 25px; border-radius: 8px; border: none; background: var(--primary); color: white; cursor: pointer; font-weight: 600; }
+    /* Search & Tools */
+    .tool-bar { display: flex; gap: 10px; margin-top: -30px; margin-bottom: 30px; }
+    input { flex: 1; padding: 15px; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 16px; }
+    .btn { padding: 10px 25px; border-radius: 12px; border: none; background: var(--primary); color: white; cursor: pointer; font-weight: bold; }
 
-    .section-title { margin: 30px 0 15px; font-size: 1.2rem; color: var(--primary); display: flex; align-items: center; gap: 10px; }
-    
-    /* Grid per Metalli e Watchlist */
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; }
-    .card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); transition: 0.3s; cursor: pointer; }
-    .card:hover { transform: translateY(-3px); border-color: var(--primary); }
-    
-    .price-up { color: #22c55e; font-weight: 600; }
-    .price-down { color: #ef4444; font-weight: 600; }
+    /* Metalli Centrali */
+    .metals-section { background: var(--card); padding: 25px; border-radius: 20px; border: 1px solid #334155; margin-bottom: 30px; }
+    .metals-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .unit-controls button { background: #334155; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-left: 5px; }
+    .unit-controls button.active { background: var(--primary); }
 
-    /* Risultati di ricerca migliorati */
-    #results-list { display: grid; gap: 10px; margin: 20px 0; }
-    .search-res { background: var(--card-bg); padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
-    
-    /* Grafico Gigante */
-    #chart-box { margin-top: 30px; background: var(--card-bg); padding: 10px; border-radius: 20px; display: none; border: 1px solid var(--border); }
-    #tradingview_widget { height: 800px; width: 100%; }
+    .metals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .metal-card { background: #0f172a; padding: 20px; border-radius: 15px; border: 1px solid #334155; text-align: center; }
+    .metal-price { font-size: 2rem; font-weight: bold; margin: 10px 0; color: var(--up); }
 
-    .unit-badge { font-size: 0.7rem; background: #334155; padding: 2px 6px; border-radius: 4px; vertical-align: middle; }
+    /* News & Results */
+    .content-grid { display: grid; grid-template-columns: 1fr 350px; gap: 30px; }
+    @media (max-width: 900px) { .content-grid { grid-template-columns: 1fr; } }
+
+    .news-card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
+    .news-card a { color: var(--text); text-decoration: none; font-weight: 600; }
+
+    #chart-box { margin-top: 30px; background: var(--card); padding: 10px; border-radius: 20px; border: 1px solid #334155; height: 850px; display: none; }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>StockVision <span style="color:var(--primary)">Ultra</span></h1>
-  <p>Metalli, Azioni e Analisi Professionale</p>
+  <h1>StockVision <span style="color:var(--primary)">Platinum</span></h1>
+  <p>Market Hub: Italia & Commodities</p>
 </header>
 
 <main>
-  <div class="search-bar">
-    <input type="text" id="sInput" placeholder="Cerca Azioni, Crypto o Indici..." onkeypress="if(event.key==='Enter') doSearch()">
-    <button onclick="doSearch()">Analizza</button>
+  <div class="tool-bar">
+    <input type="text" id="sInput" placeholder="Cerca azione (es. Ferrari, Eni, Apple)...">
+    <button class="btn" onclick="doSearch()">Analizza</button>
   </div>
 
-  <h2 class="section-title">⚖️ Materie Prime & Metalli</h2>
-  <div class="grid" id="metals-grid">
-    <div class="card" onclick="openChart('TVC:GOLD')">
-      <strong>Oro (Gold)</strong><br>
-      <div id="gold-price" class="price-up">Caricamento...</div>
-      <small id="gold-units" style="color:var(--primary)"></small>
+  <div class="metals-section">
+    <div class="metals-header">
+      <h2 style="margin:0">⚖️ Quotazioni Metalli Preziosi</h2>
+      <div class="unit-controls">
+        <span style="margin-right:10px">Valuta:</span>
+        <button id="btn-usd" class="active" onclick="setCurrency('USD')">$ USD</button>
+        <button id="btn-eur" onclick="setCurrency('EUR')">€ EUR</button>
+        <span style="margin: 0 10px">| Peso:</span>
+        <button class="unit-btn active" onclick="setUnit('oz', this)">Oncia</button>
+        <button class="unit-btn" onclick="setUnit('g', this)">1g</button>
+        <button class="unit-btn" onclick="setUnit('50g', this)">50g</button>
+        <button class="unit-btn" onclick="setUnit('100g', this)">100g</button>
+      </div>
     </div>
-    <div class="card" onclick="openChart('TVC:SILVER')">
-      <strong>Argento</strong><br>
-      <div id="silver-price" class="price-up">Caricamento...</div>
-      <small id="silver-units" style="color:var(--primary)"></small>
-    </div>
-    <div class="card" onclick="openChart('CAPITALCOM:ALUMINIUM')">
-      <strong>Alluminio</strong><br>
-      <div id="alu-price">Caricamento...</div>
-      <small>Prezzo per Tonnellata (USD)</small>
-    </div>
+    <div class="metals-grid" id="metals-display">
+      </div>
   </div>
 
-  <div id="fav-container" style="display:none">
-    <h2 class="section-title">⭐ I Tuoi Preferiti (Watchlist)</h2>
-    <div class="grid" id="fav-grid"></div>
-  </div>
+  <div class="content-grid">
+    <div>
+      <h2 style="color:var(--primary)">🇮🇹 Ultime Notizie Italia</h2>
+      <div id="news-list">Caricamento notizie...</div>
+    </div>
 
-  <div id="results-list"></div>
+    <div>
+      <h2 style="color:var(--primary)">🔍 Risultati Ricerca</h2>
+      <div id="results-list">Cerca un simbolo...</div>
+    </div>
+  </div>
 
   <div id="chart-box">
-    <div id="tradingview_widget"></div>
+    <div id="tv-container" style="height: 100%;"></div>
   </div>
 </main>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
 <script>
   const key = "d6b3blpr01qnr27jgq90d6b3blpr01qnr27jgq9g";
-  let favs = JSON.parse(localStorage.getItem('ultraFavs')) || [];
+  let currentCurrency = 'USD';
+  let currentUnit = 'oz';
+  let rates = { EUR: 0.92, USD: 1 }; // Cambio approssimativo (aggiornabile)
+  let rawPrices = { GOLD: 0, SILVER: 0 };
 
-  // 1. CARICAMENTO METALLI E CAMBI
+  // 1. CARICA NOTIZIE ITALIANE
+  async function loadNews() {
+    const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${key}`).then(r => r.json());
+    const newsDiv = document.getElementById('news-list');
+    newsDiv.innerHTML = res.slice(0, 5).map(n => `
+      <div class="news-card">
+        <a href="${n.url}" target="_blank">${n.headline}</a><br>
+        <small style="color:var(--primary)">${n.source} - ${new Date(n.datetime*1000).toLocaleDateString()}</small>
+      </div>
+    `).join('');
+  }
+
+  // 2. SISTEMA METALLI DINAMICO
   async function loadMetals() {
     const gold = await fetch(`https://finnhub.io/api/v1/quote?symbol=GC=F&token=${key}`).then(r => r.json());
     const silver = await fetch(`https://finnhub.io/api/v1/quote?symbol=SI=F&token=${key}`).then(r => r.json());
-    const alu = await fetch(`https://finnhub.io/api/v1/quote?symbol=ALU&token=${key}`).then(r => r.json());
-    
-    if(gold.c) {
-      document.getElementById('gold-price').innerHTML = `$${gold.c} <small>(${gold.dp.toFixed(2)}%)</small>`;
-      const perGram = (gold.c / 31.1035).toFixed(2);
-      document.getElementById('gold-units').innerHTML = `1g: $${perGram} | 50g: $${(perGram*50).toFixed(0)} | 100g: $${(perGram*100).toFixed(0)}`;
-    }
-    if(silver.c) {
-      document.getElementById('silver-price').innerHTML = `$${silver.c} <small>(${silver.dp.toFixed(2)}%)</small>`;
-      document.getElementById('silver-units').innerHTML = `1g: $${(silver.c/31.1).toFixed(2)}`;
-    }
-    renderFavs();
+    rawPrices.GOLD = gold.c;
+    rawPrices.SILVER = silver.c;
+    renderMetals();
   }
 
-  // 2. RICERCA CON PREZZI LIVE
+  function setCurrency(c) {
+    currentCurrency = c;
+    document.getElementById('btn-usd').classList.toggle('active', c==='USD');
+    document.getElementById('btn-eur').classList.toggle('active', c==='EUR');
+    renderMetals();
+  }
+
+  function setUnit(u, btn) {
+    currentUnit = u;
+    document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderMetals();
+  }
+
+  function renderMetals() {
+    const grid = document.getElementById('metals-display');
+    const factor = { 'oz': 1, 'g': 1/31.1035, '50g': 50/31.1035, '100g': 100/31.1035 };
+    const conv = (price) => {
+      let p = price * factor[currentUnit];
+      if(currentCurrency === 'EUR') p = p * rates.EUR;
+      return p.toLocaleString('it-IT', { style: 'currency', currency: currentCurrency });
+    };
+
+    grid.innerHTML = `
+      <div class="metal-card" onclick="openChart('TVC:GOLD')">
+        <strong>ORO</strong>
+        <div class="metal-price">${conv(rawPrices.GOLD)}</div>
+        <small>${currentUnit} in ${currentCurrency}</small>
+      </div>
+      <div class="metal-card" onclick="openChart('TVC:SILVER')">
+        <strong>ARGENTO</strong>
+        <div class="metal-price">${conv(rawPrices.SILVER)}</div>
+        <small>${currentUnit} in ${currentCurrency}</small>
+      </div>
+    `;
+  }
+
+  // 3. RICERCA MIGLIORATA (FIX ITALIA)
   async function doSearch() {
     const q = document.getElementById('sInput').value;
     const list = document.getElementById('results-list');
-    list.innerHTML = "Ricerca in corso...";
+    list.innerHTML = "Ricerca...";
     
     const res = await fetch(`https://finnhub.io/api/v1/search?q=${q}&token=${key}`).then(r => r.json());
     list.innerHTML = "";
     
     for(let item of res.result.slice(0, 5)) {
-      const quote = await fetch(`https://finnhub.io/api/v1/quote?symbol=${item.symbol}&token=${key}`).then(r => r.json());
-      const div = document.createElement('div');
-      div.className = "search-res";
-      const color = quote.dp >= 0 ? 'price-up' : 'price-down';
-      const priceHtml = quote.c ? `<span class="${color}">$${quote.c} (${quote.dp.toFixed(2)}%)</span>` : '';
+      let s = item.symbol;
+      // Se è un'azienda italiana e manca il suffisso, lo aggiungiamo
+      if(item.description.toLowerCase().includes('italy') && !s.includes('.')) s += ".MI";
       
-      div.innerHTML = `
-        <div onclick="openChart('${item.symbol}')" style="cursor:pointer">
-          <strong>${item.symbol}</strong> - ${item.description.substring(0,30)}<br>${priceHtml}
+      const quote = await fetch(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${key}`).then(r => r.json());
+      const priceText = quote.c ? `<b style="color:${quote.dp >= 0 ? 'var(--up)' : 'var(--down)'}">$${quote.c} (${quote.dp.toFixed(2)}%)</b>` : "Prezzo non disp.";
+      
+      list.innerHTML += `
+        <div class="news-card" onclick="openChart('${s}')" style="cursor:pointer">
+          <strong>${s}</strong><br>${item.description}<br>${priceText}
         </div>
-        <button onclick="toggleFav('${item.symbol}')" style="background:none; font-size:1.5rem">${favs.includes(item.symbol)?'⭐':'☆'}</button>
       `;
-      list.appendChild(div);
     }
   }
 
-  // 3. GESTIONE PREFERITI
-  function toggleFav(s) {
-    if(favs.includes(s)) favs = favs.filter(x => x !== s);
-    else favs.push(s);
-    localStorage.setItem('ultraFavs', JSON.stringify(favs));
-    renderFavs();
-    doSearch();
-  }
-
-  function renderFavs() {
-    const cont = document.getElementById('fav-container');
-    const grid = document.getElementById('fav-grid');
-    if(favs.length === 0) { cont.style.display = "none"; return; }
-    cont.style.display = "block";
-    grid.innerHTML = favs.map(s => `
-      <div class="card" onclick="openChart('${s}')">
-        <strong>${s}</strong>
-        <p>Analisi Rapida</p>
-      </div>
-    `).join('');
-  }
-
-  // 4. GRAFICO CON FIX PER SIMBOLI LOCALI
   function openChart(s) {
     document.getElementById('chart-box').style.display = "block";
-    // Fix per simboli locali (es. aziende italiane o exchange specifici)
-    let cleanSymbol = s;
-    if(s.includes(':')) cleanSymbol = s; 
-    
     new TradingView.widget({
-      "autosize": true,
-      "symbol": cleanSymbol,
-      "interval": "D",
-      "timezone": "Etc/UTC",
-      "theme": "dark",
-      "style": "1",
-      "locale": "it",
-      "container_id": "tradingview_widget",
-      "allow_symbol_change": true,
-      "details": true,
-      "hotlist": true
+      "autosize": true, "symbol": s, "interval": "D", "theme": "dark", "style": "1",
+      "locale": "it", "container_id": "tv-container", "allow_symbol_change": true, "details": true
     });
     window.scrollTo({ top: document.getElementById('chart-box').offsetTop, behavior: 'smooth' });
   }
 
+  loadNews();
   loadMetals();
 </script>
 </body>
