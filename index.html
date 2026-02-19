@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Borsa Carli - Edizione Pro Italia 2026</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
     :root { --primary: #3b82f6; --bg: #020617; --card: #111827; --text: #f3f4f6; --up: #22c55e; --down: #ef4444; }
@@ -130,7 +138,6 @@
 
   async function loadMetals() {
     try {
-        // Usiamo i ticker spot OANDA per maggiore precisione su Finnhub
         const g = await fetch(`https://finnhub.io/api/v1/quote?symbol=OANDA:XAU_USD&token=${API_KEY}`).then(r => r.json());
         const s = await fetch(`https://finnhub.io/api/v1/quote?symbol=OANDA:XAG_USD&token=${API_KEY}`).then(r => r.json());
         
