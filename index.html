@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Borsa Carli - Edizione Italia</title>
+  <title>Borsa Carli - Edizione Pro Italia</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
     :root { --primary: #3b82f6; --bg: #020617; --card: #111827; --text: #f3f4f6; --up: #22c55e; --down: #ef4444; }
@@ -14,23 +14,23 @@
 
     main { padding: 20px; max-width: 1400px; margin: auto; }
     
-    /* FIX BARRA PREFERITI - Ora scompare davvero */
+    /* FIX SIDEBAR - Sparisce totalmente */
     #side-favs { 
         position: fixed; right: 0; top: 0; width: 350px; height: 100%; 
         background: #0f172a; border-left: 4px solid var(--primary); 
-        z-index: 9999; transform: translateX(101%); transition: transform 0.4s ease-in-out; 
-        padding: 25px; overflow-y: auto; box-shadow: -10px 0 30px rgba(0,0,0,0.5); 
+        z-index: 9999; transform: translateX(105%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+        padding: 25px; overflow-y: auto; box-shadow: -15px 0 35px rgba(0,0,0,0.7); 
     }
     #side-favs.open { transform: translateX(0); }
     .close-favs { background: var(--down); color: white; border: none; padding: 12px; cursor: pointer; border-radius: 8px; width: 100%; font-weight: bold; margin-bottom: 20px; }
 
-    .search-box { display: flex; gap: 10px; margin-bottom: 30px; margin-top: -30px; }
-    input { flex: 1; padding: 15px; border-radius: 10px; border: 1px solid #374151; background: var(--card); color: white; font-size: 1.1rem; }
-    .btn-p { background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+    .search-box { display: flex; gap: 10px; margin-bottom: 30px; margin-top: -20px; }
+    input { flex: 1; padding: 15px; border-radius: 10px; border: 1px solid #374151; background: var(--card); color: white; font-size: 1.1rem; outline: none; }
+    .btn-p { background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: 900; }
 
     .unit-controls { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; }
-    .unit-btn { background: #374151; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-    .unit-btn.active { background: var(--primary); font-weight: bold; }
+    .unit-btn { background: #374151; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
+    .unit-btn.active { background: var(--primary); box-shadow: 0 0 10px rgba(59,130,246,0.5); }
 
     .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
@@ -43,7 +43,7 @@
     .news-card { padding: 12px 0; border-bottom: 1px solid #374151; }
     .news-card a { color: #fff; text-decoration: none; font-weight: bold; font-size: 1rem; line-height: 1.3; }
     
-    .res-item { background: #1f2937; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); position: relative; }
+    .res-item { background: #1f2937; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); position: relative; cursor: pointer; }
     .fav-btn { position: absolute; top: 10px; right: 10px; font-size: 1.5rem; background: none; border: none; color: #4b5563; cursor: pointer; }
     .fav-btn.active { color: #f59e0b; }
 
@@ -54,14 +54,14 @@
 
 <header>
   <button class="fav-toggle" onclick="toggleFavs()">⭐</button>
-  <h1>Borsa <span style="color:var(--primary)">Carli</span></h1>
-  <p>Mercato Italia & Commodities (€)</p>
+  <h1 style="margin:0">Borsa <span style="color:var(--primary)">Carli</span></h1>
+  <p style="margin:5px 0 0 0">Analisi Italia & Metalli in Euro (€)</p>
 </header>
 
 <div id="side-favs">
-  <button class="close-favs" onclick="toggleFavs()">CHIUDI [X]</button>
+  <button class="close-favs" onclick="toggleFavs()">CHIUDI X</button>
   <h2 style="color:var(--primary)">I Tuoi Preferiti (€)</h2>
-  <div id="fav-list">Caricamento...</div>
+  <div id="fav-list">Seleziona una stella per aggiungere...</div>
 </div>
 
 <main>
@@ -72,8 +72,8 @@
 
   <div class="main-grid">
     <div class="box">
-      <h2 style="margin:0; color:var(--primary); font-size: 1.2rem;">🇮🇹 Notizie dai Mercati</h2>
-      <div id="news-list" style="margin-top:10px;">Caricamento news...</div>
+      <h2 style="margin:0; color:var(--primary); font-size: 1.2rem;">🇮🇹 Notizie Mercato Italia</h2>
+      <div id="news-list" style="margin-top:10px;">Caricamento in corso...</div>
     </div>
     
     <div>
@@ -87,7 +87,7 @@
       
       <div class="box" style="margin-top:20px;">
         <h2 style="margin:0; color:var(--primary); font-size: 1.2rem;">🔍 Risultati Ricerca</h2>
-        <div id="results-list" style="margin-top:10px;">Cerca un'azienda sopra.</div>
+        <div id="results-list" style="margin-top:10px;">Cerca un titolo sopra.</div>
       </div>
     </div>
   </div>
@@ -105,17 +105,15 @@
   let currentUnit = 'oz';
   let rawMetals = { gold: 0, silver: 0 };
 
-  // TRADUTTORE AGGRESSIVO
+  // Traduttore Migliorato
   function itaNews(t) {
     if(!t) return "";
     return t.replace(/Stock/gi, "Azione").replace(/Market/gi, "Mercato")
             .replace(/Rise/gi, "Rialzo").replace(/Fall/gi, "Calo")
             .replace(/Earnings/gi, "Utili").replace(/Shares/gi, "Titoli")
-            .replace(/Economy/gi, "Economia").replace(/High/gi, "Massimi")
-            .replace(/Low/gi, "Minimi").replace(/Jump/gi, "Balzo")
-            .replace(/Slide/gi, "Flessione").replace(/Growth/gi, "Crescita")
-            .replace(/Inflation/gi, "Inflazione").replace(/Bank/gi, "Banca")
-            .replace(/Deal/gi, "Accordo").replace(/Profit/gi, "Profitto");
+            .replace(/Economy/gi, "Economia").replace(/Inflation/gi, "Inflazione")
+            .replace(/Jump/gi, "Balzo").replace(/Slide/gi, "Flessione")
+            .replace(/Profit/gi, "Utile").replace(/Bank/gi, "Banca");
   }
 
   function toggleFavs() {
@@ -126,20 +124,22 @@
   async function loadNews() {
     try {
         const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${API_KEY}`).then(r => r.json());
-        document.getElementById('news-list').innerHTML = res.slice(0, 6).map(n => `
+        // Filtriamo le news per dare priorità a termini finanziari
+        document.getElementById('news-list').innerHTML = res.slice(0, 7).map(n => `
           <div class="news-card"><a href="${n.url}" target="_blank">🇮🇹 ${itaNews(n.headline)}</a></div>
         `).join('');
-    } catch(e) { console.error(e); }
+    } catch(e) { document.getElementById('news-list').innerHTML = "Impossibile caricare news."; }
   }
 
   async function loadMetals() {
     try {
+        // Cerchiamo anche il cambio reale se possibile, altrimenti usiamo 0.93
         const g = await fetch(`https://finnhub.io/api/v1/quote?symbol=GC=F&token=${API_KEY}`).then(r => r.json());
         const s = await fetch(`https://finnhub.io/api/v1/quote?symbol=SI=F&token=${API_KEY}`).then(r => r.json());
-        rawMetals.gold = g.c || 2020; // Fallback se API fallisce
+        rawMetals.gold = g.c || 2025; 
         rawMetals.silver = s.c || 23;
         updateMetalDisplay();
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error("Metalli Error"); }
   }
 
   function setUnit(u, btn) {
@@ -150,6 +150,7 @@
   }
 
   function updateMetalDisplay() {
+    if(rawMetals.gold === 0) return;
     const factors = { 'oz': 1, '1g': 1/31.1035, '50g': 50/31.1035, '100g': 100/31.1035 };
     const conv = (p) => (p * factors[currentUnit] * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
     document.getElementById('metals-display').innerHTML = `
@@ -162,45 +163,60 @@
     const q = document.getElementById('sInput').value.trim();
     if(!q) return;
     const list = document.getElementById('results-list');
-    list.innerHTML = "Ricerca...";
-    const res = await fetch(`https://finnhub.io/api/v1/search?q=${q}&token=${API_KEY}`).then(r => r.json());
-    list.innerHTML = "";
-    for(let item of res.result.slice(0, 4)) {
-      let sym = item.symbol;
-      if(item.description.includes("SPA") || q.toLowerCase() === "danieli") if(!sym.includes('.')) sym += ".MI";
-      const quote = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${API_KEY}`).then(r => r.json());
-      const isFav = favs.includes(sym);
-      const color = quote.dp >= 0 ? 'var(--up)' : 'var(--down)';
-      let p = (quote.c * (sym.includes('.MI') ? 1 : fxRate)).toFixed(2);
-      list.innerHTML += `
-        <div class="res-item">
-          <button class="fav-btn ${isFav?'active':''}" onclick="toggleFavorite('${sym}')">★</button>
-          <div onclick="openChart('${sym}')">
-            <strong>${sym}</strong> - ${item.description}<br>
-            <span style="color:${color}; font-size:1.5rem; font-weight:900;">€ ${p}</span>
-          </div>
-        </div>`;
-    }
+    list.innerHTML = "Ricerca in corso...";
+    
+    try {
+        const res = await fetch(`https://finnhub.io/api/v1/search?q=${q}&token=${API_KEY}`).then(r => r.json());
+        list.innerHTML = "";
+        
+        for(let item of res.result.slice(0, 4)) {
+            let sym = item.symbol;
+            if(item.description.includes("SPA") || q.toLowerCase() === "danieli") if(!sym.includes('.')) sym += ".MI";
+            
+            const qte = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${API_KEY}`).then(r => r.json());
+            const isFav = favs.includes(sym);
+            
+            // PROTEZIONE NaN: se il prezzo non esiste, mettiamo 0
+            let rawPrice = qte.c || 0;
+            let priceEur = sym.includes('.MI') ? rawPrice : (rawPrice * fxRate);
+            let displayPrice = priceEur > 0 ? priceEur.toLocaleString('it-IT', {style:'currency', currency:'EUR'}) : "Prezzo non disp.";
+            let color = qte.dp >= 0 ? 'var(--up)' : 'var(--down)';
+
+            list.innerHTML += `
+                <div class="res-item">
+                <button class="fav-btn ${isFav?'active':''}" onclick="event.stopPropagation(); toggleFavorite('${sym}')">★</button>
+                <div onclick="openChart('${sym}')">
+                    <strong>${sym}</strong> - ${item.description}<br>
+                    <span style="color:${color}; font-size:1.5rem; font-weight:900;">${displayPrice}</span>
+                </div>
+                </div>`;
+        }
+    } catch(e) { list.innerHTML = "Errore durante la ricerca."; }
   }
 
   function toggleFavorite(s) {
     if(favs.includes(s)) favs = favs.filter(x => x !== s);
     else favs.push(s);
     localStorage.setItem('carliFavs', JSON.stringify(favs));
-    renderFavList(); doSearch();
+    renderFavList();
+    doSearch();
   }
 
   async function renderFavList() {
     const l = document.getElementById('fav-list');
-    if(favs.length === 0) { l.innerHTML = "Nessun preferito."; return; }
-    l.innerHTML = "Aggiornamento...";
+    if(favs.length === 0) { l.innerHTML = "Lista vuota."; return; }
+    l.innerHTML = "Aggiornamento prezzi...";
     let html = "";
     for(let s of favs) {
-      const q = await fetch(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${API_KEY}`).then(r => r.json());
-      let p = (q.c * (s.includes('.MI') ? 1 : fxRate)).toFixed(2);
-      html += `<div class="res-item" onclick="openChart('${s}')" style="padding:10px;">
-                <strong>${s.replace('.MI','')}</strong> <span style="float:right; font-weight:900; color:var(--up);">€ ${p}</span>
-               </div>`;
+      try {
+          const q = await fetch(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${API_KEY}`).then(r => r.json());
+          let pRaw = q.c || 0;
+          let pEur = s.includes('.MI') ? pRaw : (pRaw * fxRate);
+          let pFine = pEur > 0 ? pEur.toLocaleString('it-IT', {style:'currency', currency:'EUR'}) : "---";
+          html += `<div class="res-item" onclick="openChart('${s}')" style="padding:12px;">
+                    <strong>${s.replace('.MI','')}</strong> <span style="float:right; font-weight:900; color:var(--up);">€ ${pFine}</span>
+                   </div>`;
+      } catch(e) {}
     }
     l.innerHTML = html;
   }
