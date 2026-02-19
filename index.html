@@ -109,9 +109,8 @@
   const API_KEY = "d6b3blpr01qnr27jgq90d6b3blpr01qnr27jgq9g";
   let favs = JSON.parse(localStorage.getItem('carliFavs')) || [];
   
-  // MOTORE DI CAMBIO VALUTA (Automatico)
+  // CAMBIO VALUTA AUTOMATICO
   let fxRate = 0.92; 
-
   async function updateExchangeRate() {
     try {
       const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=FX:EURUSD&token=${API_KEY}`).then(r => r.json());
@@ -119,7 +118,7 @@
         fxRate = 1 / res.c; 
         updateMetalDisplay();
       }
-    } catch(e) { console.warn("Errore cambio, uso fallback."); }
+    } catch(e) { console.warn("Cambio fallback."); }
   }
 
   function itaNews(t) {
@@ -201,7 +200,7 @@
                 </div>
                 </div>`;
         }
-    } catch(e) { list.innerHTML = "Errore ricerca."; }
+    } catch(e) { list.innerHTML = "Errore."; }
   }
 
   function toggleFavorite(s) {
@@ -228,14 +227,32 @@
     l.innerHTML = html;
   }
 
+  // GRAFICO PULITO A LINEA (STILE GOOGLE)
   function openChart(s) {
     document.getElementById('side-favs').classList.remove('open');
     document.getElementById('chart-container').style.display = "block";
     let tv = s.includes(".MI") ? `MIL:${s.split('.')[0]}` : s;
+
     new TradingView.widget({
-      "autosize": true, "symbol": tv, "interval": "D", "theme": "dark", "style": "1",
-      "locale": "it", "container_id": "tv-widget", "allow_symbol_change": true
+      "autosize": true,
+      "symbol": tv,
+      "interval": "D",
+      "theme": "dark",
+      "style": "2",              // "2" = LINEA
+      "locale": "it",
+      "container_id": "tv-widget",
+      "allow_symbol_change": true,
+      "hide_side_toolbar": true,   
+      "hide_top_toolbar": false,  // Barra periodi VISIBILE (1G, 1M, 1A...)
+      "details": false,           
+      "hotlist": false,
+      "calendar": false,
+      "range": "1M",              
+      "enable_publishing": false,
+      "hide_legend": false,       
+      "save_image": false
     });
+    
     window.scrollTo({ top: document.getElementById('chart-container').offsetTop - 20, behavior: 'smooth' });
   }
 
