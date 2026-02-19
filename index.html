@@ -23,13 +23,13 @@
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: var(--bg); z-index: 10000;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center;
     }
     .pin-input {
       font-size: 2rem; padding: 15px; text-align: center; width: 220px;
       background: var(--card); border: 2px solid var(--primary); color: white; border-radius: 12px;
-      letter-spacing: 5px; outline: none;
+      letter-spacing: 5px; outline: none; margin-top: 20px;
     }
-    /* FINE BLOCCO */
 
     header { background: #0f172a; padding: 25px; text-align: center; border-bottom: 5px solid var(--primary); position: relative; }
     .fav-toggle { position: absolute; right: 25px; top: 25px; font-size: 2.5rem; cursor: pointer; background: none; border: none; color: #f59e0b; z-index: 100; }
@@ -58,7 +58,7 @@
 
     .box { background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid #374151; }
     .m-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
-    .m-card { background: #1f2937; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #4b5563; }
+    .m-card { background: #1f2937; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #4b5563; min-height: 100px; }
     
     .price-big { font-size: 1.8rem; font-weight: 900; color: var(--up); display: block; margin: 5px 0; }
     .news-card { padding: 12px 0; border-bottom: 1px solid #374151; }
@@ -74,10 +74,10 @@
 <body>
 
 <div id="lock-screen">
-  <h2 style="color:var(--primary)">ACCESSO RISERVATO</h2>
-  <p>Inserisci il PIN per accedere a Borsa Carli</p>
+  <h2 style="color:var(--primary); font-size: 2rem;">BORSA CARLI</h2>
+  <p>Inserisci il codice segreto</p>
   <input type="password" id="pinCode" class="pin-input" maxlength="6" placeholder="******">
-  <button class="btn-p" style="margin-top:20px" onclick="checkPin()">ENTRA NEI MERCATI</button>
+  <button class="btn-p" style="margin-top:20px" onclick="checkPin()">ENTRA</button>
   <p id="pinError" style="color:var(--down); margin-top:15px; display:none; font-weight:bold;">PIN ERRATO!</p>
 </div>
 
@@ -90,19 +90,19 @@
 <div id="side-favs">
   <button class="close-favs" onclick="toggleFavs()">CHIUDI X</button>
   <h2 style="color:var(--primary)">I Tuoi Preferiti (€)</h2>
-  <div id="fav-list">Seleziona una stella...</div>
+  <div id="fav-list">Seleziona una stella per aggiungere...</div>
 </div>
 
 <main>
   <div class="search-box">
-    <input type="text" id="sInput" placeholder="Cerca: Danieli, Ferrari, Oro...">
+    <input type="text" id="sInput" placeholder="Cerca: Danieli, Ferrari, Enel, Oro...">
     <button class="btn-p" onclick="doSearch()">CERCA</button>
   </div>
 
   <div class="main-grid">
     <div class="box">
       <h2 style="margin:0; color:var(--primary); font-size: 1.2rem;">🇮🇹 Notizie Mercato Italia</h2>
-      <div id="news-list" style="margin-top:10px;">Caricamento...</div>
+      <div id="news-list" style="margin-top:10px;">In attesa del PIN...</div>
     </div>
     
     <div>
@@ -112,11 +112,14 @@
         <button class="unit-btn" onclick="setUnit('50g', this)">50g</button>
         <button class="unit-btn" onclick="setUnit('100g', this)">100g</button>
       </div>
-      <div class="m-grid" id="metals-display"></div>
+      <div class="m-grid" id="metals-display">
+          <div class="m-card"><p>In attesa...</p></div>
+          <div class="m-card"><p>In attesa...</p></div>
+      </div>
       
       <div class="box" style="margin-top:20px;">
         <h2 style="margin:0; color:var(--primary); font-size: 1.2rem;">🔍 Risultati Ricerca</h2>
-        <div id="results-list" style="margin-top:10px;">Cerca un titolo.</div>
+        <div id="results-list" style="margin-top:10px;">Effettua una ricerca.</div>
       </div>
     </div>
   </div>
@@ -131,19 +134,29 @@
   const API_KEY = "d6b3blpr01qnr27jgq90d6b3blpr01qnr27jgq9g";
   let favs = JSON.parse(localStorage.getItem('carliFavs')) || [];
   
-  // LOGICA PIN
+  // LOGICA PIN E CARICAMENTO
   function checkPin() {
     const pin = document.getElementById('pinCode').value;
     if (pin === "220811") {
       document.getElementById('lock-screen').style.display = 'none';
       sessionStorage.setItem('accessGranted', 'true');
+      // Carica i dati reali solo dopo il PIN
+      loadAllData();
     } else {
       document.getElementById('pinError').style.display = 'block';
       document.getElementById('pinCode').value = "";
     }
   }
+
+  function loadAllData() {
+    updateExchangeRate();
+    loadNews();
+    loadMetals();
+  }
+
   if (sessionStorage.getItem('accessGranted') === 'true') {
     document.getElementById('lock-screen').style.display = 'none';
+    loadAllData();
   }
 
   // CAMBIO VALUTA
@@ -151,18 +164,13 @@
   async function updateExchangeRate() {
     try {
       const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=FX:EURUSD&token=${API_KEY}`).then(r => r.json());
-      if(res.c) { fxRate = 1 / res.c; updateMetalDisplay(); }
+      if(res.c) { fxRate = 1 / res.c; }
     } catch(e) {}
   }
 
   function itaNews(t) {
     if(!t) return "";
     return t.replace(/Stock/gi, "Azione").replace(/Market/gi, "Mercato").replace(/Rise/gi, "Rialzo").replace(/Fall/gi, "Calo");
-  }
-
-  function toggleFavs() {
-    document.getElementById('side-favs').classList.toggle('open');
-    if(document.getElementById('side-favs').classList.contains('open')) renderFavList();
   }
 
   async function loadNews() {
@@ -174,17 +182,29 @@
     } catch(e) {}
   }
 
-  let rawMetals = { gold: 2000, silver: 25 }; 
+  let rawMetals = { gold: 0, silver: 0 }; 
   let currentUnit = 'oz';
 
   async function loadMetals() {
-    await updateExchangeRate();
     try {
         const g = await fetch(`https://finnhub.io/api/v1/quote?symbol=OANDA:XAU_USD&token=${API_KEY}`).then(r => r.json());
         const s = await fetch(`https://finnhub.io/api/v1/quote?symbol=OANDA:XAG_USD&token=${API_KEY}`).then(r => r.json());
-        if(g.c) rawMetals.gold = g.c; if(s.c) rawMetals.silver = s.c;
+        if(g.c) rawMetals.gold = g.c; 
+        if(s.c) rawMetals.silver = s.c;
         updateMetalDisplay();
-    } catch(e) { updateMetalDisplay(); }
+    } catch(e) {
+        document.getElementById('metals-display').innerHTML = "<p>Errore connessione mercati.</p>";
+    }
+  }
+
+  function updateMetalDisplay() {
+    if(rawMetals.gold === 0) return;
+    const factors = { 'oz': 1, '1g': 1/31.1035, '50g': 50/31.1035, '100g': 100/31.1035 };
+    const conv = (p) => (p * factors[currentUnit] * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+    document.getElementById('metals-display').innerHTML = `
+      <div class="m-card"><strong>ORO (${currentUnit})</strong><span class="price-big">${conv(rawMetals.gold)}</span></div>
+      <div class="m-card"><strong>ARGENTO (${currentUnit})</strong><span class="price-big">${conv(rawMetals.silver)}</span></div>
+    `;
   }
 
   function setUnit(u, btn) {
@@ -194,20 +214,11 @@
     updateMetalDisplay();
   }
 
-  function updateMetalDisplay() {
-    const factors = { 'oz': 1, '1g': 1/31.1035, '50g': 50/31.1035, '100g': 100/31.1035 };
-    const conv = (p) => (p * factors[currentUnit] * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
-    document.getElementById('metals-display').innerHTML = `
-      <div class="m-card"><strong>ORO (${currentUnit})</strong><span class="price-big">${conv(rawMetals.gold)}</span></div>
-      <div class="m-card"><strong>ARGENTO (${currentUnit})</strong><span class="price-big">${conv(rawMetals.silver)}</span></div>
-    `;
-  }
-
   async function doSearch() {
     const q = document.getElementById('sInput').value.trim();
     if(!q) return;
     const list = document.getElementById('results-list');
-    list.innerHTML = "Ricerca...";
+    list.innerHTML = "Ricerca in corso...";
     try {
         const res = await fetch(`https://finnhub.io/api/v1/search?q=${q}&token=${API_KEY}`).then(r => r.json());
         list.innerHTML = "";
@@ -226,7 +237,7 @@
                 </div>
                 </div>`;
         }
-    } catch(e) { list.innerHTML = "Errore."; }
+    } catch(e) { list.innerHTML = "Errore ricerca."; }
   }
 
   function toggleFavorite(s) {
@@ -238,7 +249,7 @@
 
   async function renderFavList() {
     const l = document.getElementById('fav-list');
-    if(favs.length === 0) { l.innerHTML = "Vuota."; return; }
+    if(favs.length === 0) { l.innerHTML = "Nessun preferito."; return; }
     let html = "";
     for(let s of favs) {
       try {
@@ -264,7 +275,10 @@
     window.scrollTo({ top: document.getElementById('chart-container').offsetTop - 20, behavior: 'smooth' });
   }
 
-  updateExchangeRate(); loadNews(); loadMetals();
+  function toggleFavs() {
+    document.getElementById('side-favs').classList.toggle('open');
+    if(document.getElementById('side-favs').classList.contains('open')) renderFavList();
+  }
 </script>
 </body>
 </html>
