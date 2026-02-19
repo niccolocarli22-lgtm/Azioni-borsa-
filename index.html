@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Borsa Carli - Edizione Pro Italia 2026</title>
+  <title>Borsa Carli - Edizione Blindata 2026</title>
   
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#020617">
@@ -12,11 +12,25 @@
       navigator.serviceWorker.register('sw.js');
     }
   </script>
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
     :root { --primary: #3b82f6; --bg: #020617; --card: #111827; --text: #f3f4f6; --up: #22c55e; --down: #ef4444; }
     body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; }
     
+    /* SCHERMATA DI BLOCCO */
+    #lock-screen {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: var(--bg); z-index: 10000;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .pin-input {
+      font-size: 2rem; padding: 15px; text-align: center; width: 220px;
+      background: var(--card); border: 2px solid var(--primary); color: white; border-radius: 12px;
+      letter-spacing: 5px; outline: none;
+    }
+    /* FINE BLOCCO */
+
     header { background: #0f172a; padding: 25px; text-align: center; border-bottom: 5px solid var(--primary); position: relative; }
     .fav-toggle { position: absolute; right: 25px; top: 25px; font-size: 2.5rem; cursor: pointer; background: none; border: none; color: #f59e0b; z-index: 100; }
 
@@ -59,6 +73,14 @@
 </head>
 <body>
 
+<div id="lock-screen">
+  <h2 style="color:var(--primary)">ACCESSO RISERVATO</h2>
+  <p>Inserisci il PIN per accedere a Borsa Carli</p>
+  <input type="password" id="pinCode" class="pin-input" maxlength="6" placeholder="******">
+  <button class="btn-p" style="margin-top:20px" onclick="checkPin()">ENTRA NEI MERCATI</button>
+  <p id="pinError" style="color:var(--down); margin-top:15px; display:none; font-weight:bold;">PIN ERRATO!</p>
+</div>
+
 <header>
   <button class="fav-toggle" onclick="toggleFavs()">⭐</button>
   <h1 style="margin:0">Borsa <span style="color:var(--primary)">Carli</span></h1>
@@ -68,19 +90,19 @@
 <div id="side-favs">
   <button class="close-favs" onclick="toggleFavs()">CHIUDI X</button>
   <h2 style="color:var(--primary)">I Tuoi Preferiti (€)</h2>
-  <div id="fav-list">Seleziona una stella per aggiungere...</div>
+  <div id="fav-list">Seleziona una stella...</div>
 </div>
 
 <main>
   <div class="search-box">
-    <input type="text" id="sInput" placeholder="Cerca: Danieli, Ferrari, Enel, Oro...">
+    <input type="text" id="sInput" placeholder="Cerca: Danieli, Ferrari, Oro...">
     <button class="btn-p" onclick="doSearch()">CERCA</button>
   </div>
 
   <div class="main-grid">
     <div class="box">
       <h2 style="margin:0; color:var(--primary); font-size: 1.2rem;">🇮🇹 Notizie Mercato Italia</h2>
-      <div id="news-list" style="margin-top:10px;">Caricamento in corso...</div>
+      <div id="news-list" style="margin-top:10px;">Caricamento...</div>
     </div>
     
     <div>
@@ -94,7 +116,7 @@
       
       <div class="box" style="margin-top:20px;">
         <h2 style="margin:0; color:var(--primary); font-size: 1.2rem;">🔍 Risultati Ricerca</h2>
-        <div id="results-list" style="margin-top:10px;">Cerca un titolo sopra.</div>
+        <div id="results-list" style="margin-top:10px;">Cerca un titolo.</div>
       </div>
     </div>
   </div>
@@ -109,24 +131,33 @@
   const API_KEY = "d6b3blpr01qnr27jgq90d6b3blpr01qnr27jgq9g";
   let favs = JSON.parse(localStorage.getItem('carliFavs')) || [];
   
-  // CAMBIO VALUTA AUTOMATICO
+  // LOGICA PIN
+  function checkPin() {
+    const pin = document.getElementById('pinCode').value;
+    if (pin === "220811") {
+      document.getElementById('lock-screen').style.display = 'none';
+      sessionStorage.setItem('accessGranted', 'true');
+    } else {
+      document.getElementById('pinError').style.display = 'block';
+      document.getElementById('pinCode').value = "";
+    }
+  }
+  if (sessionStorage.getItem('accessGranted') === 'true') {
+    document.getElementById('lock-screen').style.display = 'none';
+  }
+
+  // CAMBIO VALUTA
   let fxRate = 0.92; 
   async function updateExchangeRate() {
     try {
       const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=FX:EURUSD&token=${API_KEY}`).then(r => r.json());
-      if(res.c) {
-        fxRate = 1 / res.c; 
-        updateMetalDisplay();
-      }
-    } catch(e) { console.warn("Cambio fallback."); }
+      if(res.c) { fxRate = 1 / res.c; updateMetalDisplay(); }
+    } catch(e) {}
   }
 
   function itaNews(t) {
     if(!t) return "";
-    return t.replace(/Stock/gi, "Azione").replace(/Market/gi, "Mercato")
-            .replace(/Rise/gi, "Rialzo").replace(/Fall/gi, "Calo")
-            .replace(/Earnings/gi, "Utili").replace(/Shares/gi, "Titoli")
-            .replace(/Economy/gi, "Economia").replace(/Inflation/gi, "Inflazione");
+    return t.replace(/Stock/gi, "Azione").replace(/Market/gi, "Mercato").replace(/Rise/gi, "Rialzo").replace(/Fall/gi, "Calo");
   }
 
   function toggleFavs() {
@@ -140,10 +171,10 @@
         document.getElementById('news-list').innerHTML = res.slice(0, 7).map(n => `
           <div class="news-card"><a href="${n.url}" target="_blank">🇮🇹 ${itaNews(n.headline)}</a></div>
         `).join('');
-    } catch(e) { document.getElementById('news-list').innerHTML = "Impossibile caricare news."; }
+    } catch(e) {}
   }
 
-  let rawMetals = { gold: 5015.00, silver: 79.50 }; 
+  let rawMetals = { gold: 2000, silver: 25 }; 
   let currentUnit = 'oz';
 
   async function loadMetals() {
@@ -151,8 +182,7 @@
     try {
         const g = await fetch(`https://finnhub.io/api/v1/quote?symbol=OANDA:XAU_USD&token=${API_KEY}`).then(r => r.json());
         const s = await fetch(`https://finnhub.io/api/v1/quote?symbol=OANDA:XAG_USD&token=${API_KEY}`).then(r => r.json());
-        if(g.c) rawMetals.gold = g.c; 
-        if(s.c) rawMetals.silver = s.c;
+        if(g.c) rawMetals.gold = g.c; if(s.c) rawMetals.silver = s.c;
         updateMetalDisplay();
     } catch(e) { updateMetalDisplay(); }
   }
@@ -183,20 +213,16 @@
         list.innerHTML = "";
         for(let item of res.result.slice(0, 4)) {
             let sym = item.symbol;
-            const isItalian = sym.includes('.MI') || item.description.includes("SPA") || q.toLowerCase() === "danieli";
-            if(isItalian && !sym.includes('.')) sym += ".MI";
+            if((sym.includes('.MI') || item.description.includes("SPA")) && !sym.includes('.')) sym += ".MI";
             const qte = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${API_KEY}`).then(r => r.json());
             const isFav = favs.includes(sym);
-            let rawPrice = qte.c || 0;
-            let priceEur = isItalian ? rawPrice : (rawPrice * fxRate);
-            let displayPrice = priceEur > 0 ? priceEur.toLocaleString('it-IT', {style:'currency', currency:'EUR'}) : "---";
-            let color = qte.dp >= 0 ? 'var(--up)' : 'var(--down)';
+            let pEur = sym.includes('.MI') ? qte.c : (qte.c * fxRate);
             list.innerHTML += `
                 <div class="res-item">
                 <button class="fav-btn ${isFav?'active':''}" onclick="event.stopPropagation(); toggleFavorite('${sym}')">★</button>
                 <div onclick="openChart('${sym}')">
                     <strong>${sym}</strong> - ${item.description}<br>
-                    <span style="color:${color}; font-size:1.5rem; font-weight:900;">${displayPrice}</span>
+                    <span style="color:var(--up); font-size:1.5rem; font-weight:900;">${pEur ? pEur.toLocaleString('it-IT', {style:'currency', currency:'EUR'}) : "---"}</span>
                 </div>
                 </div>`;
         }
@@ -212,47 +238,29 @@
 
   async function renderFavList() {
     const l = document.getElementById('fav-list');
-    if(favs.length === 0) { l.innerHTML = "Lista vuota."; return; }
+    if(favs.length === 0) { l.innerHTML = "Vuota."; return; }
     let html = "";
     for(let s of favs) {
       try {
           const q = await fetch(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${API_KEY}`).then(r => r.json());
-          let pRaw = q.c || 0;
-          let pEur = s.includes('.MI') ? pRaw : (pRaw * fxRate);
+          let pEur = s.includes('.MI') ? q.c : (q.c * fxRate);
           html += `<div class="res-item" onclick="openChart('${s}')" style="padding:12px;">
-                    <strong>${s.replace('.MI','')}</strong> <span style="float:right; font-weight:900; color:var(--up);">${pEur.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>
+                    <strong>${s}</strong> <span style="float:right; font-weight:900; color:var(--up);">${pEur.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>
                    </div>`;
       } catch(e) {}
     }
     l.innerHTML = html;
   }
 
-  // GRAFICO PULITO A LINEA (STILE GOOGLE)
   function openChart(s) {
     document.getElementById('side-favs').classList.remove('open');
     document.getElementById('chart-container').style.display = "block";
     let tv = s.includes(".MI") ? `MIL:${s.split('.')[0]}` : s;
-
     new TradingView.widget({
-      "autosize": true,
-      "symbol": tv,
-      "interval": "D",
-      "theme": "dark",
-      "style": "2",              // "2" = LINEA
-      "locale": "it",
-      "container_id": "tv-widget",
-      "allow_symbol_change": true,
-      "hide_side_toolbar": true,   
-      "hide_top_toolbar": false,  // Barra periodi VISIBILE (1G, 1M, 1A...)
-      "details": false,           
-      "hotlist": false,
-      "calendar": false,
-      "range": "1M",              
-      "enable_publishing": false,
-      "hide_legend": false,       
-      "save_image": false
+      "autosize": true, "symbol": tv, "interval": "D", "theme": "dark", "style": "2",
+      "locale": "it", "container_id": "tv-widget", "hide_side_toolbar": true, "hide_top_toolbar": false,
+      "details": false, "range": "1M"
     });
-    
     window.scrollTo({ top: document.getElementById('chart-container').offsetTop - 20, behavior: 'smooth' });
   }
 
