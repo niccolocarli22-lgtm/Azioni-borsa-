@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Borsa Carli - Edizione Pro Italia</title>
+  <title>Borsa Carli - Edizione Pro Italia 2026</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
     :root { --primary: #3b82f6; --bg: #020617; --card: #111827; --text: #f3f4f6; --up: #22c55e; --down: #ef4444; }
@@ -14,7 +14,6 @@
 
     main { padding: 20px; max-width: 1400px; margin: auto; }
     
-    /* FIX SIDEBAR - Sparisce totalmente */
     #side-favs { 
         position: fixed; right: 0; top: 0; width: 350px; height: 100%; 
         background: #0f172a; border-left: 4px solid var(--primary); 
@@ -55,7 +54,7 @@
 <header>
   <button class="fav-toggle" onclick="toggleFavs()">⭐</button>
   <h1 style="margin:0">Borsa <span style="color:var(--primary)">Carli</span></h1>
-  <p style="margin:5px 0 0 0">Analisi Italia & Metalli in Euro (€)</p>
+  <p style="margin:5px 0 0 0">Analisi Italia & Metalli in Euro (€) - 2026</p>
 </header>
 
 <div id="side-favs">
@@ -101,19 +100,18 @@
 <script>
   const API_KEY = "d6b3blpr01qnr27jgq90d6b3blpr01qnr27jgq9g";
   let favs = JSON.parse(localStorage.getItem('carliFavs')) || [];
-  let fxRate = 0.93; 
+  
+  // Tasso Cambio EUR/USD aggiornato (Feb 2026)
+  let fxRate = 0.851; 
   let currentUnit = 'oz';
-  let rawMetals = { gold: 0, silver: 0 };
+  let rawMetals = { gold: 5015.00, silver: 79.50 }; // Valori fallback 2026
 
-  // Traduttore Migliorato
   function itaNews(t) {
     if(!t) return "";
     return t.replace(/Stock/gi, "Azione").replace(/Market/gi, "Mercato")
             .replace(/Rise/gi, "Rialzo").replace(/Fall/gi, "Calo")
             .replace(/Earnings/gi, "Utili").replace(/Shares/gi, "Titoli")
-            .replace(/Economy/gi, "Economia").replace(/Inflation/gi, "Inflazione")
-            .replace(/Jump/gi, "Balzo").replace(/Slide/gi, "Flessione")
-            .replace(/Profit/gi, "Utile").replace(/Bank/gi, "Banca");
+            .replace(/Economy/gi, "Economia").replace(/Inflation/gi, "Inflazione");
   }
 
   function toggleFavs() {
@@ -124,7 +122,6 @@
   async function loadNews() {
     try {
         const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${API_KEY}`).then(r => r.json());
-        // Filtriamo le news per dare priorità a termini finanziari
         document.getElementById('news-list').innerHTML = res.slice(0, 7).map(n => `
           <div class="news-card"><a href="${n.url}" target="_blank">🇮🇹 ${itaNews(n.headline)}</a></div>
         `).join('');
@@ -133,13 +130,18 @@
 
   async function loadMetals() {
     try {
-        // Cerchiamo anche il cambio reale se possibile, altrimenti usiamo 0.93
-        const g = await fetch(`https://finnhub.io/api/v1/quote?symbol=GC=F&token=${API_KEY}`).then(r => r.json());
-        const s = await fetch(`https://finnhub.io/api/v1/quote?symbol=SI=F&token=${API_KEY}`).then(r => r.json());
-        rawMetals.gold = g.c || 2025; 
-        rawMetals.silver = s.c || 23;
+        // Usiamo i ticker spot OANDA per maggiore precisione su Finnhub
+        const g = await fetch(`https://finnhub.io/api/v1/quote?symbol=OANDA:XAU_USD&token=${API_KEY}`).then(r => r.json());
+        const s = await fetch(`https://finnhub.io/api/v1/quote?symbol=OANDA:XAG_USD&token=${API_KEY}`).then(r => r.json());
+        
+        if(g.c) rawMetals.gold = g.c; 
+        if(s.c) rawMetals.silver = s.c;
+        
         updateMetalDisplay();
-    } catch(e) { console.error("Metalli Error"); }
+    } catch(e) { 
+        console.warn("Metalli: Errore API, uso fallback 2026");
+        updateMetalDisplay(); 
+    }
   }
 
   function setUnit(u, btn) {
@@ -150,9 +152,9 @@
   }
 
   function updateMetalDisplay() {
-    if(rawMetals.gold === 0) return;
     const factors = { 'oz': 1, '1g': 1/31.1035, '50g': 50/31.1035, '100g': 100/31.1035 };
     const conv = (p) => (p * factors[currentUnit] * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+    
     document.getElementById('metals-display').innerHTML = `
       <div class="m-card"><strong>ORO (${currentUnit})</strong><span class="price-big">${conv(rawMetals.gold)}</span></div>
       <div class="m-card"><strong>ARGENTO (${currentUnit})</strong><span class="price-big">${conv(rawMetals.silver)}</span></div>
@@ -171,15 +173,15 @@
         
         for(let item of res.result.slice(0, 4)) {
             let sym = item.symbol;
-            if(item.description.includes("SPA") || q.toLowerCase() === "danieli") if(!sym.includes('.')) sym += ".MI";
+            const isItalian = sym.includes('.MI') || item.description.includes("SPA") || q.toLowerCase() === "danieli";
+            if(isItalian && !sym.includes('.')) sym += ".MI";
             
             const qte = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${API_KEY}`).then(r => r.json());
             const isFav = favs.includes(sym);
             
-            // PROTEZIONE NaN: se il prezzo non esiste, mettiamo 0
             let rawPrice = qte.c || 0;
-            let priceEur = sym.includes('.MI') ? rawPrice : (rawPrice * fxRate);
-            let displayPrice = priceEur > 0 ? priceEur.toLocaleString('it-IT', {style:'currency', currency:'EUR'}) : "Prezzo non disp.";
+            let priceEur = isItalian ? rawPrice : (rawPrice * fxRate);
+            let displayPrice = priceEur > 0 ? priceEur.toLocaleString('it-IT', {style:'currency', currency:'EUR'}) : "Non disp.";
             let color = qte.dp >= 0 ? 'var(--up)' : 'var(--down)';
 
             list.innerHTML += `
@@ -199,22 +201,22 @@
     else favs.push(s);
     localStorage.setItem('carliFavs', JSON.stringify(favs));
     renderFavList();
-    doSearch();
   }
 
   async function renderFavList() {
     const l = document.getElementById('fav-list');
     if(favs.length === 0) { l.innerHTML = "Lista vuota."; return; }
-    l.innerHTML = "Aggiornamento prezzi...";
+    l.innerHTML = "Aggiornamento...";
     let html = "";
     for(let s of favs) {
       try {
           const q = await fetch(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${API_KEY}`).then(r => r.json());
           let pRaw = q.c || 0;
-          let pEur = s.includes('.MI') ? pRaw : (pRaw * fxRate);
+          let isIt = s.includes('.MI');
+          let pEur = isIt ? pRaw : (pRaw * fxRate);
           let pFine = pEur > 0 ? pEur.toLocaleString('it-IT', {style:'currency', currency:'EUR'}) : "---";
           html += `<div class="res-item" onclick="openChart('${s}')" style="padding:12px;">
-                    <strong>${s.replace('.MI','')}</strong> <span style="float:right; font-weight:900; color:var(--up);">€ ${pFine}</span>
+                    <strong>${s.replace('.MI','')}</strong> <span style="float:right; font-weight:900; color:var(--up);">${pFine}</span>
                    </div>`;
       } catch(e) {}
     }
@@ -222,6 +224,7 @@
   }
 
   function openChart(s) {
+    document.getElementById('side-favs').classList.remove('open');
     document.getElementById('chart-container').style.display = "block";
     let tv = s.includes(".MI") ? `MIL:${s.split('.')[0]}` : s;
     new TradingView.widget({
