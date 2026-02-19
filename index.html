@@ -109,10 +109,18 @@
   const API_KEY = "d6b3blpr01qnr27jgq90d6b3blpr01qnr27jgq9g";
   let favs = JSON.parse(localStorage.getItem('carliFavs')) || [];
   
-  // Tasso Cambio EUR/USD aggiornato (Feb 2026)
-  let fxRate = 0.851; 
-  let currentUnit = 'oz';
-  let rawMetals = { gold: 5015.00, silver: 79.50 }; // Valori fallback 2026
+  // MOTORE DI CAMBIO VALUTA (Automatico)
+  let fxRate = 0.92; 
+
+  async function updateExchangeRate() {
+    try {
+      const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=FX:EURUSD&token=${API_KEY}`).then(r => r.json());
+      if(res.c) {
+        fxRate = 1 / res.c; 
+        updateMetalDisplay();
+      }
+    } catch(e) { console.warn("Errore cambio, uso fallback."); }
+  }
 
   function itaNews(t) {
     if(!t) return "";
@@ -136,19 +144,18 @@
     } catch(e) { document.getElementById('news-list').innerHTML = "Impossibile caricare news."; }
   }
 
+  let rawMetals = { gold: 5015.00, silver: 79.50 }; 
+  let currentUnit = 'oz';
+
   async function loadMetals() {
+    await updateExchangeRate();
     try {
         const g = await fetch(`https://finnhub.io/api/v1/quote?symbol=OANDA:XAU_USD&token=${API_KEY}`).then(r => r.json());
         const s = await fetch(`https://finnhub.io/api/v1/quote?symbol=OANDA:XAG_USD&token=${API_KEY}`).then(r => r.json());
-        
         if(g.c) rawMetals.gold = g.c; 
         if(s.c) rawMetals.silver = s.c;
-        
         updateMetalDisplay();
-    } catch(e) { 
-        console.warn("Metalli: Errore API, uso fallback 2026");
-        updateMetalDisplay(); 
-    }
+    } catch(e) { updateMetalDisplay(); }
   }
 
   function setUnit(u, btn) {
@@ -161,7 +168,6 @@
   function updateMetalDisplay() {
     const factors = { 'oz': 1, '1g': 1/31.1035, '50g': 50/31.1035, '100g': 100/31.1035 };
     const conv = (p) => (p * factors[currentUnit] * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
-    
     document.getElementById('metals-display').innerHTML = `
       <div class="m-card"><strong>ORO (${currentUnit})</strong><span class="price-big">${conv(rawMetals.gold)}</span></div>
       <div class="m-card"><strong>ARGENTO (${currentUnit})</strong><span class="price-big">${conv(rawMetals.silver)}</span></div>
@@ -172,25 +178,20 @@
     const q = document.getElementById('sInput').value.trim();
     if(!q) return;
     const list = document.getElementById('results-list');
-    list.innerHTML = "Ricerca in corso...";
-    
+    list.innerHTML = "Ricerca...";
     try {
         const res = await fetch(`https://finnhub.io/api/v1/search?q=${q}&token=${API_KEY}`).then(r => r.json());
         list.innerHTML = "";
-        
         for(let item of res.result.slice(0, 4)) {
             let sym = item.symbol;
             const isItalian = sym.includes('.MI') || item.description.includes("SPA") || q.toLowerCase() === "danieli";
             if(isItalian && !sym.includes('.')) sym += ".MI";
-            
             const qte = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${API_KEY}`).then(r => r.json());
             const isFav = favs.includes(sym);
-            
             let rawPrice = qte.c || 0;
             let priceEur = isItalian ? rawPrice : (rawPrice * fxRate);
-            let displayPrice = priceEur > 0 ? priceEur.toLocaleString('it-IT', {style:'currency', currency:'EUR'}) : "Non disp.";
+            let displayPrice = priceEur > 0 ? priceEur.toLocaleString('it-IT', {style:'currency', currency:'EUR'}) : "---";
             let color = qte.dp >= 0 ? 'var(--up)' : 'var(--down)';
-
             list.innerHTML += `
                 <div class="res-item">
                 <button class="fav-btn ${isFav?'active':''}" onclick="event.stopPropagation(); toggleFavorite('${sym}')">★</button>
@@ -200,7 +201,7 @@
                 </div>
                 </div>`;
         }
-    } catch(e) { list.innerHTML = "Errore durante la ricerca."; }
+    } catch(e) { list.innerHTML = "Errore ricerca."; }
   }
 
   function toggleFavorite(s) {
@@ -213,17 +214,14 @@
   async function renderFavList() {
     const l = document.getElementById('fav-list');
     if(favs.length === 0) { l.innerHTML = "Lista vuota."; return; }
-    l.innerHTML = "Aggiornamento...";
     let html = "";
     for(let s of favs) {
       try {
           const q = await fetch(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${API_KEY}`).then(r => r.json());
           let pRaw = q.c || 0;
-          let isIt = s.includes('.MI');
-          let pEur = isIt ? pRaw : (pRaw * fxRate);
-          let pFine = pEur > 0 ? pEur.toLocaleString('it-IT', {style:'currency', currency:'EUR'}) : "---";
+          let pEur = s.includes('.MI') ? pRaw : (pRaw * fxRate);
           html += `<div class="res-item" onclick="openChart('${s}')" style="padding:12px;">
-                    <strong>${s.replace('.MI','')}</strong> <span style="float:right; font-weight:900; color:var(--up);">${pFine}</span>
+                    <strong>${s.replace('.MI','')}</strong> <span style="float:right; font-weight:900; color:var(--up);">${pEur.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>
                    </div>`;
       } catch(e) {}
     }
@@ -241,7 +239,7 @@
     window.scrollTo({ top: document.getElementById('chart-container').offsetTop - 20, behavior: 'smooth' });
   }
 
-  loadNews(); loadMetals();
+  updateExchangeRate(); loadNews(); loadMetals();
 </script>
 </body>
 </html>
