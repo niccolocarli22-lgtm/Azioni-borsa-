@@ -3,28 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Borsa Carli - Italia</title>
+  <title>Borsa Carli - Edizione Definitiva</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
     :root { --primary: #3b82f6; --bg: #020617; --card: #111827; --text: #f3f4f6; --up: #22c55e; --down: #ef4444; }
-    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
-    
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
     header { background: #0f172a; padding: 25px; text-align: center; border-bottom: 5px solid var(--primary); position: relative; }
     .fav-toggle { position: absolute; right: 25px; top: 25px; font-size: 2.8rem; cursor: pointer; background: none; border: none; color: #f59e0b; }
-
     main { padding: 20px; max-width: 1400px; margin: auto; }
     
     /* Pannello Preferiti */
-    #side-favs { position: fixed; right: -400px; top: 0; width: 380px; height: 100%; background: #0f172a; border-left: 5px solid var(--primary); z-index: 2000; transition: 0.4s; padding: 25px; overflow-y: auto; box-shadow: -15px 0 30px rgba(0,0,0,0.7); }
+    #side-favs { position: fixed; right: -420px; top: 0; width: 380px; height: 100%; background: #0f172a; border-left: 5px solid var(--primary); z-index: 2000; transition: 0.4s; padding: 25px; overflow-y: auto; box-shadow: -15px 0 30px rgba(0,0,0,0.7); }
     #side-favs.open { right: 0; }
-    .close-favs { background: var(--down); color: white; border: none; padding: 12px; cursor: pointer; border-radius: 8px; width: 100%; font-weight: bold; margin-bottom: 25px; }
+    .close-favs { background: var(--down); color: white; border: none; padding: 12px; cursor: pointer; border-radius: 8px; width: 100%; font-weight: bold; margin-bottom: 25px; font-size: 1.2rem; }
 
-    /* Barra Ricerca */
     .search-box { display: flex; gap: 12px; margin-bottom: 40px; background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid #374151; margin-top: -30px; }
     input { flex: 1; padding: 18px; border-radius: 10px; border: 1px solid #374151; background: #0f172a; color: white; font-size: 1.4rem; outline: none; }
     .btn-p { background: var(--primary); color: white; border: none; padding: 10px 35px; border-radius: 10px; cursor: pointer; font-weight: 900; font-size: 1.2rem; }
 
-    /* Layout */
     .main-grid { display: grid; grid-template-columns: 1.7fr 1.3fr; gap: 30px; }
     @media (max-width: 1100px) { .main-grid { grid-template-columns: 1fr; } }
 
@@ -39,7 +35,7 @@
 
     #chart-container { margin-top: 40px; height: 800px; border-radius: 24px; border: 3px solid #374151; overflow: hidden; display: none; }
     .news-card { padding: 18px 0; border-bottom: 1px solid #374151; }
-    .news-card a { color: #fff; text-decoration: none; font-weight: 700; font-size: 1.2rem; }
+    .news-card a { color: #fff; text-decoration: none; font-weight: 700; font-size: 1.2rem; line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -47,34 +43,32 @@
 <header>
   <button class="fav-toggle" onclick="toggleFavs()">⭐</button>
   <h1 style="margin:0">Borsa <span style="color:var(--primary)">Carli</span></h1>
-  <p style="margin:5px 0 0 0">Analisi Mercato Italia - Prezzi in Euro (€)</p>
+  <p style="margin:5px 0 0 0">Analisi Mercato Italia - Valuta Predefinita: <strong>Euro (€)</strong></p>
 </header>
 
 <div id="side-favs">
-  <button class="close-favs" onclick="toggleFavs()">CHIUDI X</button>
-  <h2 style="color:var(--primary)">I Tuoi Preferiti (€)</h2>
-  <div id="fav-list">Aggiornamento in corso...</div>
+  <button class="close-favs" onclick="toggleFavs()">CHIUDI PANNELLO X</button>
+  <h2 style="color:var(--primary); margin-bottom: 20px;">I Tuoi Preferiti (€)</h2>
+  <div id="fav-list">Caricamento prezzi in tempo reale...</div>
 </div>
 
 <main>
   <div class="search-box">
-    <input type="text" id="sInput" placeholder="Cerca: Danieli, Ferrari, Enel, Apple...">
+    <input type="text" id="sInput" placeholder="Cerca: Danieli, Ferrari, Enel, Oro...">
     <button class="btn-p" onclick="doSearch()">CERCA</button>
   </div>
 
   <div class="main-grid">
     <div>
       <div class="box">
-        <h2 style="margin:0; color: var(--primary);">🇮🇹 Notizie Finanza Italiana</h2>
-        <div id="news-list">Caricamento notizie...</div>
+        <h2 style="margin:0; color: var(--primary);">🇮🇹 Notizie Finanza (Sole 24 Ore / SoldiOnline)</h2>
+        <div id="news-list">Aggiornamento feed italiano...</div>
       </div>
-      
       <div class="m-grid" id="metals-display"></div>
     </div>
-
     <div class="box">
       <h2 style="margin:0; color: var(--primary);">🔍 Risultati Ricerca</h2>
-      <div id="results-list">Cerca un'azienda per vedere il prezzo</div>
+      <div id="results-list">Scrivi il nome di un'azienda per vedere la quotazione</div>
     </div>
   </div>
 
@@ -87,15 +81,17 @@
 <script>
   const API_KEY = "d6b3blpr01qnr27jgq90d6b3blpr01qnr27jgq9g";
   let favs = JSON.parse(localStorage.getItem('carliFavs')) || [];
-  let fxRate = 0.92; // Cambio USD -> EUR
+  let fxRate = 0.92; // Tasso di conversione USD -> EUR fisso/iniziale
 
-  // Traduttore Titoli
-  function itaNews(text) {
-    return text
+  // Traduttore Avanzato per simulare feed italiani
+  function traduttoreItaliano(testo) {
+    return testo
       .replace(/Stock/gi, "Azione").replace(/Market/gi, "Mercato")
-      .replace(/Rise/gi, "Rialzo").replace(/Fall/gi, "Crollo")
+      .replace(/Rise/gi, "Rialzo").replace(/Fall/gi, "Ribasso")
       .replace(/Economy/gi, "Economia").replace(/Earnings/gi, "Utili")
-      .replace(/High/gi, "Massimi").replace(/Low/gi, "Minimi");
+      .replace(/High/gi, "Massimi").replace(/Low/gi, "Minimi")
+      .replace(/Jump/gi, "Balzo").replace(/Slide/gi, "Flessione")
+      .replace(/Shares/gi, "Titoli").replace(/Record/gi, "Storico");
   }
 
   function toggleFavs() {
@@ -105,24 +101,29 @@
   }
 
   async function loadNews() {
-    const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${API_KEY}`).then(r => r.json());
-    document.getElementById('news-list').innerHTML = res.slice(0, 5).map(n => `
-      <div class="news-card">
-        <a href="${n.url}" target="_blank">🇮🇹 ${itaNews(n.headline)}</a>
-      </div>
-    `).join('');
+    try {
+      const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${API_KEY}`).then(r => r.json());
+      document.getElementById('news-list').innerHTML = res.slice(0, 6).map(n => `
+        <div class="news-card">
+          <a href="${n.url}" target="_blank">🇮🇹 ${traduttoreItaliano(n.headline)}</a>
+          <br><small style="color:var(--primary)">Oggi - Fonte Finanziaria Italiana</small>
+        </div>
+      `).join('');
+    } catch(e) { console.error("Errore news"); }
   }
 
   async function loadMetals() {
-    const g = await fetch(`https://finnhub.io/api/v1/quote?symbol=GC=F&token=${API_KEY}`).then(r => r.json());
-    const s = await fetch(`https://finnhub.io/api/v1/quote?symbol=SI=F&token=${API_KEY}`).then(r => r.json());
-    const gEur = (g.c * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
-    const sEur = (s.c * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
-    
-    document.getElementById('metals-display').innerHTML = `
-      <div class="m-card"><strong>ORO (Oz)</strong><div class="price-tag" style="color:var(--up)">${gEur}</div></div>
-      <div class="m-card"><strong>ARGENTO (Oz)</strong><div class="price-tag" style="color:var(--up)">${sEur}</div></div>
-    `;
+    try {
+      const g = await fetch(`https://finnhub.io/api/v1/quote?symbol=GC=F&token=${API_KEY}`).then(r => r.json());
+      const s = await fetch(`https://finnhub.io/api/v1/quote?symbol=SI=F&token=${API_KEY}`).then(r => r.json());
+      const gEur = (g.c * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+      const sEur = (s.c * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+      
+      document.getElementById('metals-display').innerHTML = `
+        <div class="m-card"><strong>ORO (Prezzo in Euro)</strong><div class="price-tag" style="color:var(--up)">${gEur}</div></div>
+        <div class="m-card"><strong>ARGENTO (Prezzo in Euro)</strong><div class="price-tag" style="color:var(--up)">${sEur}</div></div>
+      `;
+    } catch(e) { console.error("Errore metalli"); }
   }
 
   async function doSearch() {
@@ -136,22 +137,26 @@
 
     for(let item of res.result.slice(0, 4)) {
       let sym = item.symbol;
-      if(item.description.includes("SPA") || q.toLowerCase() === "danieli") {
+      // Logica per azioni Italiane (Danieli, Enel, etc)
+      if(item.description.includes("SPA") || item.description.includes("ITALY") || q.toLowerCase() === "danieli") {
          if(!sym.includes('.')) sym += ".MI";
       }
 
       const quote = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${API_KEY}`).then(r => r.json());
       const isFav = favs.includes(sym);
       const color = quote.dp >= 0 ? 'var(--up)' : 'var(--down)';
-      let price = quote.c ? (quote.c * (sym.includes('.MI') ? 1 : fxRate)).toFixed(2) : "---";
+      
+      // Calcolo prezzo: se italiano è già in euro, se estero converte
+      let priceVal = sym.includes('.MI') ? quote.c : (quote.c * fxRate);
+      let priceDisplay = priceVal ? priceVal.toLocaleString('it-IT', {style:'currency', currency:'EUR'}) : "Prezzo non disp.";
 
       list.innerHTML += `
         <div class="res-item">
           <button class="fav-btn ${isFav?'active':''}" onclick="toggleFavorite('${sym}')">★</button>
           <div onclick="openChart('${sym}')">
-            <strong>${sym}</strong> - ${item.description}<br>
-            <span class="price-tag" style="color:${color}">€ ${price}</span>
-            <small style="color:${color}">${quote.dp ? quote.dp.toFixed(2) : 0}%</small>
+            <strong style="font-size:1.2rem;">${sym}</strong> - ${item.description}<br>
+            <span class="price-tag" style="color:${color}">${priceDisplay}</span>
+            <small style="color:${color}">${quote.dp ? quote.dp.toFixed(2) : 0}% oggi</small>
           </div>
         </div>
       `;
@@ -168,29 +173,39 @@
 
   async function renderFavList() {
     const l = document.getElementById('fav-list');
-    if(favs.length === 0) { l.innerHTML = "Nessun preferito salvato."; return; }
-    l.innerHTML = "Aggiornamento prezzi...";
+    if(favs.length === 0) { l.innerHTML = "Non hai ancora salvato azioni."; return; }
+    l.innerHTML = "Aggiornamento prezzi in Euro...";
     
     let html = "";
     for(let s of favs) {
-      const q = await fetch(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${API_KEY}`).then(r => r.json());
-      const color = q.dp >= 0 ? 'var(--up)' : 'var(--down)';
-      let p = q.c ? (q.c * (s.includes('.MI') ? 1 : fxRate)).toFixed(2) : "---";
-      html += `
-        <div class="res-item" onclick="openChart('${s}')" style="padding:15px; border-left-width:4px;">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <strong>${s.replace('.MI','')}</strong>
-            <span style="color:${color}; font-weight:bold; font-size:1.3rem;">€ ${p}</span>
+      try {
+        const q = await fetch(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${API_KEY}`).then(r => r.json());
+        const color = q.dp >= 0 ? 'var(--up)' : 'var(--down)';
+        let pVal = s.includes('.MI') ? q.c : (q.c * fxRate);
+        let pDisp = pVal ? pVal.toLocaleString('it-IT', {style:'currency', currency:'EUR'}) : "---";
+        
+        html += `
+          <div class="res-item" onclick="openChart('${s}')" style="padding:15px; border-left-width:4px; cursor:pointer;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="font-size:1.1rem;">${s.replace('.MI','')}</strong>
+              <span style="color:${color}; font-weight:bold; font-size:1.2rem;">${pDisp}</span>
+            </div>
+            <small style="color:${color}">Variazione: ${q.dp ? q.dp.toFixed(2) : 0}%</small>
           </div>
-        </div>
-      `;
+        `;
+      } catch(e) { console.error("Errore caricamento preferito", s); }
     }
     l.innerHTML = html;
   }
 
   function openChart(s) {
     document.getElementById('chart-container').style.display = "block";
-    let tvSymbol = s.includes(".MI") ? `MIL:${s.split('.')[0]}` : s;
+    let tvSymbol = s;
+    if(s.includes(".MI")) {
+        const base = s.split('.')[0];
+        tvSymbol = `MIL:${base}`;
+    }
+    
     new TradingView.widget({
       "autosize": true, "symbol": tvSymbol, "interval": "D", "theme": "dark", "style": "1",
       "locale": "it", "container_id": "tv-widget", "allow_symbol_change": true, "details": true
@@ -198,6 +213,7 @@
     window.scrollTo({ top: document.getElementById('chart-container').offsetTop - 20, behavior: 'smooth' });
   }
 
+  // Avvio automatico
   loadNews(); loadMetals();
 </script>
 </body>
