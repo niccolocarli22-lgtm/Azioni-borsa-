@@ -144,38 +144,50 @@ async function fetchMetals() {
   try {
     // Oro
     const gold = await fetchYahoo('GC=F');
-    if (gold) {
+    if (gold && gold > 0) {
       state.prevGold = state.rawGoldUSD;
       state.rawGoldUSD = gold;
       cache.gold.data = gold;
       cache.gold.timestamp = Date.now();
-    } else if (isCacheValid('gold')) {
+    } else if (isCacheValid('gold') && cache.gold.data) {
       state.rawGoldUSD = cache.gold.data;
+    } else {
+      // FALLBACK PRICES - Aggiornato 20 Febbraio 2026
+      // Oro: $5086/oz | Argento: $82.3/oz | Alluminio: $3102/ton
+      state.rawGoldUSD = 5086;
     }
     
     // Argento
     const silver = await fetchYahoo('SI=F');
-    if (silver) {
+    if (silver && silver > 0) {
       state.prevSilver = state.rawSilverUSD;
       state.rawSilverUSD = silver;
       cache.silver.data = silver;
       cache.silver.timestamp = Date.now();
-    } else if (isCacheValid('silver')) {
+    } else if (isCacheValid('silver') && cache.silver.data) {
       state.rawSilverUSD = cache.silver.data;
+    } else {
+      state.rawSilverUSD = 82.3;
     }
     
     // Alluminio
     const alu = await fetchYahoo('ALI=F');
-    if (alu) {
+    if (alu && alu > 0) {
       state.prevAlu = state.rawAluUSD;
       state.rawAluUSD = alu;
       cache.alu.data = alu;
       cache.alu.timestamp = Date.now();
-    } else if (isCacheValid('alu')) {
+    } else if (isCacheValid('alu') && cache.alu.data) {
       state.rawAluUSD = cache.alu.data;
+    } else {
+      state.rawAluUSD = 3102;
     }
   } catch(e) {
     console.error('Errore fetch metalli:', e);
+    // Usa i fallback se tutto fallisce
+    if (!state.rawGoldUSD || state.rawGoldUSD === 0) state.rawGoldUSD = 5086;
+    if (!state.rawSilverUSD || state.rawSilverUSD === 0) state.rawSilverUSD = 82.3;
+    if (!state.rawAluUSD || state.rawAluUSD === 0) state.rawAluUSD = 3102;
   }
 }
 
@@ -272,9 +284,14 @@ async function loadNews() {
           <a href="${n.url}" target="_blank" rel="noopener noreferrer">
             ● ${n.headline.substring(0, 70)}${n.headline.length > 70 ? '...' : ''}
           </a>
+          <div style="font-size: 0.7rem; color: #64748b; margin-top: 3px;">
+            ${new Date(n.datetime * 1000).toLocaleString('it-IT')}
+          </div>
         </div>
       `).join('');
       document.getElementById('news-status').textContent = '✓ Notizie aggiornate';
+    } else {
+      document.getElementById('news-list').innerHTML = '<p style="color:#94a3b8; font-size: 0.9rem;">Notizie non disponibili al momento</p>';
     }
   } catch(e) {
     console.error('Errore loadNews:', e);
@@ -321,23 +338,50 @@ async function doSearch() {
   resultsDiv.innerHTML = '<div style="text-align:center;"><div class="loader"></div></div>';
   
   try {
-    const res = await fetchFinnhub('/quote', { symbol: q });
+    // Se finisce con .MI, è un'azione italiana (Borsa Italiana)
+    let symbol = q;
+    if (!q.includes('.MI') && !q.includes(':')) {
+      // Prova prima senza suffisso
+      symbol = q;
+    }
+    
+    const res = await fetchFinnhub('/quote', { symbol: symbol });
     
     if (!res?.c) {
-      showError('Simbolo non trovato');
+      // Se non trova, prova con .MI (Borsa Italiana)
+      if (!symbol.includes('.MI')) {
+        const res2 = await fetchFinnhub('/quote', { symbol: symbol + '.MI' });
+        if (res2?.c) {
+          const price = res2.c;
+          resultsDiv.innerHTML = `
+            <div class="m-card" onclick="openChart('${symbol}.MI')" style="cursor:pointer; border-color:var(--primary); margin-top:10px; margin-bottom: 10px;">
+              <strong>${symbol}.MI</strong><br>
+              <span class="price-big">${price.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>
+              <span class="price-change" style="color: #94a3b8;">Borsa Italiana - Clicca per grafico</span>
+              <span class="info-tag">Clicca per visualizzare il grafico</span>
+            </div>
+          `;
+          showSuccess(`${symbol}.MI trovato`);
+          return;
+        }
+      }
+      showError('Simbolo non trovato. Prova con: RACE, ENEL.MI, TERNA.MI');
       resultsDiv.innerHTML = '';
       return;
     }
     
-    const price = q.includes('.MI') ? res.c : (res.c * state.fxRate);
+    const price = symbol.includes('.MI') ? res.c : (res.c * state.fxRate);
+    const exchange = symbol.includes('.MI') ? 'Borsa Italiana' : 'Internazionale';
+    
     resultsDiv.innerHTML = `
-      <div class="m-card" onclick="openChart('${q}')" style="cursor:pointer; border-color:var(--primary); margin-top:10px; margin-bottom: 10px;">
-        <strong>${q}</strong><br>
+      <div class="m-card" onclick="openChart('${symbol}')" style="cursor:pointer; border-color:var(--primary); margin-top:10px; margin-bottom: 10px;">
+        <strong>${symbol}</strong><br>
         <span class="price-big">${price.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>
+        <span class="price-change" style="color: #94a3b8;">${exchange}</span>
         <span class="info-tag">Clicca per visualizzare il grafico</span>
       </div>
     `;
-    showSuccess(`${q} trovato`);
+    showSuccess(`${symbol} trovato`);
   } catch(e) {
     console.error('Errore doSearch:', e);
     showError('Errore nella ricerca');
@@ -375,8 +419,69 @@ function manualRefresh() {
 }
 
 function toggleSettings() {
-  // Placeholder per menu impostazioni futuro
-  showSuccess('Impostazioni non ancora disponibili');
+  const settingsHTML = `
+    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000;" onclick="this.remove()">
+      <div style="background: var(--card); padding: 30px; border-radius: 16px; border: 1px solid var(--border); max-width: 400px; width: 90%;" onclick="event.stopPropagation()">
+        <h2 style="color: var(--primary); margin-top: 0;">Impostazioni</h2>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; color: #cbd5e1; font-size: 0.9rem;">
+            <strong>Intervallo Aggiornamento</strong>
+          </label>
+          <select id="refresh-interval" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: white;">
+            <option value="30000">30 secondi</option>
+            <option value="60000" selected>1 minuto (attuale)</option>
+            <option value="120000">2 minuti</option>
+            <option value="300000">5 minuti</option>
+          </select>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; color: #cbd5e1; font-size: 0.9rem;">
+            <strong>Numero Notizie</strong>
+          </label>
+          <input type="number" id="news-count" min="5" max="20" value="8" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: white;">
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: flex; align-items: center; gap: 10px; color: #cbd5e1; cursor: pointer;">
+            <input type="checkbox" id="auto-refresh" checked>
+            <span>Auto-aggiornamento abilitato</span>
+          </label>
+        </div>
+        
+        <div style="margin-bottom: 20px; padding: 15px; background: #1e293b; border-radius: 8px; border-left: 4px solid var(--primary);">
+          <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">
+            <strong>Cache locale:</strong> ${(localStorage.length)} elementi<br>
+            <strong>Storage:</strong> ${navigator.storage ? 'Disponibile' : 'Non disponibile'}
+          </p>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+          <button onclick="document.querySelector('[onclick*=toggleSettings]').parentElement.remove(); saveSettings();" style="flex: 1; padding: 10px; background: var(--primary); color: #064e3b; border: none; border-radius: 8px; font-weight: 800; cursor: pointer;">
+            Salva
+          </button>
+          <button onclick="this.closest('[style*=fixed]').remove();" style="flex: 1; padding: 10px; background: var(--border); color: var(--text); border: none; border-radius: 8px; font-weight: 800; cursor: pointer;">
+            Chiudi
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', settingsHTML);
+}
+
+function saveSettings() {
+  const interval = document.getElementById('refresh-interval')?.value || 60000;
+  const newsCount = document.getElementById('news-count')?.value || 8;
+  const autoRefresh = document.getElementById('auto-refresh')?.checked ?? true;
+  
+  localStorage.setItem('refreshInterval', interval);
+  localStorage.setItem('newsCount', newsCount);
+  localStorage.setItem('autoRefresh', autoRefresh);
+  
+  showSuccess('Impostazioni salvate!');
 }
 
 // ===== NETWORK DETECTION =====
