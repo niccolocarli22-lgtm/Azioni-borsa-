@@ -3,153 +3,187 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Borsa Carli Pro - 2026</title>
+  <title>Borsa Carli Pro - Multi-Source 2026</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     :root { --primary: #34d399; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --up: #10b981; --down: #fb7185; }
-    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
-    header { background: #1e293b; padding: 15px 20px; text-align: center; border-bottom: 3px solid var(--primary); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-    .fav-toggle { font-size: 1.5rem; cursor: pointer; background: none; border: none; color: #fbbf24; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 50px; }
+    header { background: #1e293b; padding: 15px; text-align: center; border-bottom: 3px solid var(--primary); }
     main { padding: 15px; max-width: 1200px; margin: auto; }
-    .unit-controls { display: flex; justify-content: center; gap: 5px; margin-bottom: 15px; }
-    .unit-btn { background: #334155; color: #94a3b8; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
-    .unit-btn.active { background: var(--primary); color: #064e3b; }
+    
     .m-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-    .m-card { background: #1e293b; padding: 20px; border-radius: 16px; text-align: center; border: 1px solid #334155; }
-    .price-big { font-size: 1.4rem; font-weight: 800; color: var(--up); display: block; margin-top: 8px; }
-    .search-box { display: flex; gap: 8px; margin-bottom: 20px; }
-    input { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; outline: none; }
+    .m-card { background: var(--card); padding: 15px; border-radius: 16px; text-align: center; border: 1px solid #334155; }
+    .price-big { font-size: 1.3rem; font-weight: 800; color: var(--up); display: block; margin-top: 5px; }
+    .unit-label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; }
+
+    .search-box { display: flex; gap: 8px; margin: 20px 0; }
+    input { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: white; outline: none; }
     .btn-p { background: var(--primary); color: #064e3b; border: none; padding: 0 20px; border-radius: 10px; font-weight: 800; cursor: pointer; }
-    .box { background: var(--card); padding: 15px; border-radius: 16px; border: 1px solid #334155; }
-    .news-card { padding: 10px 0; border-bottom: 1px solid #334155; font-size: 0.85rem; }
-    .news-card a { color: #cbd5e1; text-decoration: none; display: block; }
-    #side-favs { position: fixed; right: 0; top: 0; width: 280px; height: 100%; background: #1e293b; border-left: 2px solid var(--primary); z-index: 999; transform: translateX(105%); transition: 0.3s; padding: 20px; }
-    #side-favs.open { transform: translateX(0); }
-    #chart-container { margin-top: 20px; height: 450px; border-radius: 16px; overflow: hidden; display: none; border: 1px solid #334155; }
+    
+    .unit-selector { display: flex; justify-content: center; gap: 5px; margin-bottom: 15px; }
+    .u-btn { background: #334155; border: none; color: #94a3b8; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
+    .u-btn.active { background: var(--primary); color: #064e3b; font-weight: bold; }
+    
+    .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .status-yahoo { background: #60a5fa; } /* Blu per Yahoo */
+    .status-finnhub { background: var(--primary); } /* Verde per Finnhub */
+
+    #chart-container { height: 450px; margin-top: 20px; border-radius: 16px; overflow: hidden; display: none; border: 1px solid #334155; }
+    #results-list { margin-top: 10px; }
   </style>
 </head>
 <body>
 
 <header>
-  <div style="width:30px"></div> <h1 style="margin:0; font-size: 1.2rem;">BORSA <span style="color:var(--primary)">CARLI</span> PRO</h1>
-  <button class="fav-toggle" onclick="toggleFavs()">⭐</button>
+  <h1 style="margin:0; font-size: 1.2rem;">BORSA <span style="color:var(--primary)">CARLI</span> PRO</h1>
 </header>
 
-<div id="side-favs">
-  <button onclick="toggleFavs()" style="width:100%; padding:10px; background:var(--down); border:none; color:white; border-radius:8px; margin-bottom:20px;">CHIUDI</button>
-  <div id="fav-list"></div>
-</div>
-
 <main>
-  <div class="unit-controls">
-    <button class="unit-btn active" onclick="setUnit('oz', this)">Oncia (oz)</button>
-    <button class="unit-btn" onclick="setUnit('1g', this)">1 Grammo</button>
-    <button class="unit-btn" onclick="setUnit('100g', this)">100 Grammi</button>
+  <div class="unit-selector">
+    <button class="u-btn active" onclick="setUnit('oz', this)">Oncia</button>
+    <button class="u-btn" onclick="setUnit('1g', this)">1g</button>
+    <button class="u-btn" onclick="setUnit('100g', this)">100g</button>
   </div>
 
-  <div class="m-grid" id="assets-display">
-    <div class="m-card"><strong>ORO</strong><span id="gold-p" class="price-big">---</span></div>
-    <div class="m-card"><strong>ARGENTO</strong><span id="silver-p" class="price-big">---</span></div>
-    <div class="m-card"><strong>BITCOIN</strong><span id="btc-p" class="price-big">---</span></div>
-    <div class="m-card"><strong>ETH</strong><span id="eth-p" class="price-big">---</span></div>
+  <div class="m-grid">
+    <div class="m-card">
+        <small><span class="status-dot status-yahoo"></span>YAHOO</small><br>
+        <strong>ORO</strong>
+        <span id="gold-p" class="price-big">---</span>
+        <span class="unit-label" id="gold-u">Prezzo oz</span>
+    </div>
+    <div class="m-card">
+        <small><span class="status-dot status-yahoo"></span>YAHOO</small><br>
+        <strong>ARGENTO</strong>
+        <span id="silver-p" class="price-big">---</span>
+        <span class="unit-label">Prezzo oz</span>
+    </div>
+    <div class="m-card">
+        <small><span class="status-dot status-yahoo"></span>YAHOO</small><br>
+        <strong>ALLUMINIO</strong>
+        <span id="alu-p" class="price-big">---</span>
+        <span class="unit-label">Tonnellata (€)</span>
+    </div>
+    <div class="m-card">
+        <small><span class="status-dot status-finnhub"></span>FINNHUB</small><br>
+        <strong>BITCOIN</strong>
+        <span id="btc-p" class="price-big">---</span>
+        <span class="unit-label">BTC / EUR</span>
+    </div>
   </div>
 
   <div class="search-box">
-    <input type="text" id="sInput" placeholder="Cerca: Ferrari, Danieli, Enel...">
-    <button class="btn-p" onclick="doSearch()">VAI</button>
+    <input type="text" id="sInput" placeholder="Cerca Azione (es. RACE, ENEL.MI, AAPL)">
+    <button class="btn-p" onclick="doSearch()">CERCA</button>
   </div>
-
-  <div class="box">
-    <h3 style="margin:0 0 10px 0; color:var(--primary); font-size: 0.8rem; text-transform: uppercase;">Notizie Mercato</h3>
-    <div id="news-list"></div>
-  </div>
-
+  
+  <div id="results-list"></div>
   <div id="chart-container"><div id="tv-widget" style="height:100%"></div></div>
 </main>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
 <script>
-  const API_KEY = "d6b3blpr01qnr27jgq90d6b3blpr01qnr27jgq9g";
-  let fxRate = 0.925;
-  let currentUnit = 'oz';
+  const FINNHUB_KEY = "d6b3blpr01qnr27jgq90d6b3blpr01qnr27jgq9g";
+  let fxRate = 0.92;
+  let unit = 'oz';
 
-  async function updateFx() {
+  // Funzione per prendere dati da Yahoo Finance (simulata via query proxy gratuita)
+  async function fetchYahoo(ticker) {
     try {
-      const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=FX:EURUSD&token=${API_KEY}`).then(res => res.json());
-      if(r.c) fxRate = 1 / r.c;
-    } catch(e) {}
+      // Usiamo l'endpoint di query pubblico di Yahoo
+      const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`).then(r => r.json());
+      return res.chart.result[0].meta.regularMarketPrice;
+    } catch(e) {
+      console.warn(`Yahoo fallito per ${ticker}, provo alternativa Finnhub`);
+      return null;
+    }
   }
 
-  async function getPrice(symbol) {
-    const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`).then(res => res.json());
-    return r.c || 0;
-  }
+  async function updateData() {
+    // 1. Aggiorna Cambio Euro/Dollaro
+    const fxRes = await fetch(`https://finnhub.io/api/v1/quote?symbol=FX:EURUSD&token=${FINNHUB_KEY}`).then(r => r.json());
+    if(fxRes.c) fxRate = 1 / fxRes.c;
 
-  async function loadAssets() {
-    // Ticker alternativi per oro e argento se OANDA fallisce
-    let gold = await getPrice("OANDA:XAU_USD") || await getPrice("FX:XAUUSD") || 2020;
-    let silver = await getPrice("OANDA:XAG_USD") || await getPrice("FX:XAGUSD") || 23;
-    let btc = await getPrice("BINANCE:BTCUSDT");
-    let eth = await getPrice("BINANCE:ETHUSDT");
+    // 2. Metalli da YAHOO FINANCE (Ticker: GC=F Oro, SI=F Argento, ALI=F Alluminio)
+    let goldUSD = await fetchYahoo('GC=F') || 2850; // Valore stimato se Yahoo è giù
+    let silverUSD = await fetchYahoo('SI=F') || 35;
+    let aluUSD = await fetchYahoo('ALI=F') || 2600;
 
-    const format = (val, type) => {
-      if(!val) return "---";
-      const factors = { 'oz': 1, '1g': 1/31.1035, '100g': 100/31.1035 };
-      let p = (type === 'm') ? (val * factors[currentUnit]) : val;
-      return (p * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
-    };
+    // Calcolo Oro in base all'unità
+    let goldDisplay = goldUSD * fxRate;
+    if(unit === '1g') goldDisplay /= 31.1035;
+    if(unit === '100g') goldDisplay = (goldDisplay / 31.1035) * 100;
 
-    document.getElementById('gold-p').innerText = format(gold, 'm');
-    document.getElementById('silver-p').innerText = format(silver, 'm');
-    document.getElementById('btc-p').innerText = format(btc, 'c');
-    document.getElementById('eth-p').innerText = format(eth, 'c');
+    document.getElementById('gold-p').innerText = goldDisplay.toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+    document.getElementById('silver-p').innerText = (silverUSD * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+    document.getElementById('alu-p').innerText = (aluUSD * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+
+    // 3. Bitcoin da Finnhub (molto più veloce per Crypto)
+    const btc = await fetch(`https://finnhub.io/api/v1/quote?symbol=BINANCE:BTCUSDT&token=${FINNHUB_KEY}`).then(r => r.json());
+    document.getElementById('btc-p').innerText = (btc.c * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
   }
 
   function setUnit(u, btn) {
-    currentUnit = u;
-    document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+    unit = u;
+    document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    loadAssets();
-  }
-
-  async function loadNews() {
-    const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${API_KEY}`).then(r => r.json());
-    document.getElementById('news-list').innerHTML = res.slice(0, 5).map(n => `
-      <div class="news-card"><a href="${n.url}" target="_blank">● ${n.headline.substring(0,60)}...</a></div>
-    `).join('');
+    updateData();
   }
 
   async function doSearch() {
     const q = document.getElementById('sInput').value.trim().toUpperCase();
-    const res = await fetch(`https://finnhub.io/api/v1/search?q=${q}&token=${API_KEY}`).then(r => r.json());
-    let html = "";
-    for(let item of res.result.slice(0, 3)) {
-      let sym = item.symbol;
-      if(!sym.includes('.') && (item.description.includes("SPA") || item.displaySymbol.includes(".MI"))) sym += ".MI";
-      const qte = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${API_KEY}`).then(r => r.json());
-      const p = sym.includes('.MI') ? qte.c : (qte.c * fxRate);
-      if(p) {
-        html += `<div style="background:#334155; padding:12px; border-radius:10px; margin-top:10px;" onclick="openChart('${sym}')">
-          <small>${sym}</small><br><strong>${item.description.substring(0,30)}</strong><br>
-          <span style="color:var(--up); font-weight:800;">${p.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>
-        </div>`;
-      }
+    const list = document.getElementById('results-list');
+    list.innerHTML = "Ricerca in corso...";
+
+    // TENTA FINNHUB
+    try {
+        let res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${q}&token=${FINNHUB_KEY}`).then(r => r.json());
+        
+        if(res.c && res.c !== 0) {
+            renderResult(q, res.c, 'FINNHUB');
+        } else {
+            // SE FINNHUB FALLISCE, PROVA YAHOO
+            let yPrice = await fetchYahoo(q.includes('.MI') ? q : q); 
+            if(yPrice) {
+                renderResult(q, yPrice, 'YAHOO');
+            } else {
+                list.innerHTML = "Titolo non trovato o API limitata.";
+            }
+        }
+    } catch(e) {
+        list.innerHTML = "Errore durante la ricerca.";
     }
-    document.getElementById('results-list').innerHTML = html || "Nessun risultato.";
+  }
+
+  function renderResult(ticker, price, source) {
+    const isIt = ticker.includes('.MI');
+    const finalPrice = isIt ? price : (price * fxRate);
+    const color = source === 'YAHOO' ? '#60a5fa' : 'var(--primary)';
+    
+    document.getElementById('results-list').innerHTML = `
+        <div class="m-card" onclick="openChart('${ticker}')" style="cursor:pointer; border-color:${color}">
+            <small><span class="status-dot" style="background:${color}"></span>${source}</small><br>
+            <strong>${ticker}</strong><br>
+            <span class="price-big">${finalPrice.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>
+            <small>Clicca per il grafico</small>
+        </div>`;
   }
 
   function openChart(s) {
     document.getElementById('chart-container').style.display = "block";
     document.getElementById('tv-widget').innerHTML = "";
-    let tv = s.includes(".MI") ? `MIL:${s.split('.')[0]}` : s;
-    new TradingView.widget({ "autosize": true, "symbol": tv, "theme": "dark", "container_id": "tv-widget", "locale": "it" });
+    new TradingView.widget({
+      "autosize": true,
+      "symbol": s.includes('.MI') ? `MILAN:${s.split('.')[0]}` : s,
+      "interval": "D",
+      "theme": "dark",
+      "container_id": "tv-widget"
+    });
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   }
 
-  function toggleFavs() { document.getElementById('side-favs').classList.toggle('open'); }
-
-  updateFx().then(() => { loadAssets(); loadNews(); });
-  setInterval(loadAssets, 60000);
+  updateData();
+  setInterval(updateData, 60000); // Aggiorna ogni minuto
 </script>
 </body>
 </html>
