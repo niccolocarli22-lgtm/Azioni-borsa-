@@ -270,22 +270,26 @@ async function loadNews() {
     if (isCacheValid('news')) {
       news = cache.news.data;
     } else {
-      const res = await fetchFinnhub('/news', { category: 'general' });
-      if (res) {
-        news = res;
+      // Usa NewsAPI per notizie in italiano
+      const newsApiKey = "300c4587a894469e87c93c60c78837fb";
+      const newsApiUrl = `https://newsapi.org/v2/everything?q=oro+argento+bitcoin+borsa&language=it&sortBy=publishedAt&apiKey=${newsApiKey}`;
+      
+      const res = await fetch(newsApiUrl).then(r => r.json());
+      if (res?.articles) {
+        news = res.articles;
         cache.news.data = news;
         cache.news.timestamp = Date.now();
       }
     }
     
-    if (news && Array.isArray(news)) {
+    if (news && Array.isArray(news) && news.length > 0) {
       document.getElementById('news-list').innerHTML = news.slice(0, 8).map(n => `
         <div class="news-card">
           <a href="${n.url}" target="_blank" rel="noopener noreferrer">
-            ● ${n.headline.substring(0, 70)}${n.headline.length > 70 ? '...' : ''}
+            ● ${n.title.substring(0, 70)}${n.title.length > 70 ? '...' : ''}
           </a>
           <div style="font-size: 0.7rem; color: #64748b; margin-top: 3px;">
-            ${new Date(n.datetime * 1000).toLocaleString('it-IT')}
+            ${new Date(n.publishedAt).toLocaleString('it-IT')}
           </div>
         </div>
       `).join('');
@@ -453,6 +457,7 @@ function toggleSettings() {
         <div style="margin-bottom: 20px; padding: 15px; background: #1e293b; border-radius: 8px; border-left: 4px solid var(--primary);">
           <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">
             <strong>Cache locale:</strong> ${(localStorage.length)} elementi<br>
+            <strong>AI:</strong> Gemini integrato ✓<br>
             <strong>Storage:</strong> ${navigator.storage ? 'Disponibile' : 'Non disponibile'}
           </p>
         </div>
@@ -496,7 +501,143 @@ window.addEventListener('offline', () => {
   showError('Connessione persa. Utilizzo dati in cache.');
 });
 
-// ===== INIZIALIZZAZIONE =====
+// ===== AI GEMINI =====
+
+const GEMINI_API_KEY = "AIzaSyAaZXjK0BIIiLQUqOe0ds9wS8zg13wCfWM";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+
+async function askGemini(question) {
+  try {
+    const prompt = `Tu sei un assistente finanziario esperto di metalli preziosi, criptovalute e borsa italiana.
+    
+Dati attuali:
+- Oro: $${state.rawGoldUSD}/oz
+- Argento: $${state.rawSilverUSD}/oz
+- Alluminio: $${state.rawAluUSD}/ton
+- Bitcoin: $${state.rawBtcUSD}
+- Cambio EUR/USD: ${state.fxRate.toFixed(4)}
+
+Rispondi in italiano, in modo conciso e professionale. Spiega in termini semplici.
+
+Domanda: ${question}`;
+
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: prompt }]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    
+    if (data.candidates && data.candidates[0]) {
+      return data.candidates[0].content.parts[0].text;
+    } else {
+      throw new Error('Risposta Gemini non valida');
+    }
+  } catch (e) {
+    console.error('Errore Gemini:', e);
+    throw e;
+  }
+}
+
+function openAIChat() {
+  const chatHTML = `
+    <div id="ai-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999;" onclick="if(event.target.id==='ai-overlay') document.getElementById('ai-overlay').remove()">
+      <div style="background: var(--card); padding: 20px; border-radius: 16px; border: 2px solid var(--primary); max-width: 600px; width: 95%; height: 80vh; display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(52, 211, 153, 0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h2 style="color: var(--primary); margin: 0; font-size: 1.2rem;">🤖 Assistente Gemini AI</h2>
+          <button onclick="document.getElementById('ai-overlay').remove();" style="background: var(--border); color: var(--text); border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-weight: 800;">✕</button>
+        </div>
+        
+        <div id="ai-chat-box" style="flex: 1; overflow-y: auto; padding: 15px; background: #0f172a; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border); display: flex; flex-direction: column;">
+          <div style="color: #34d399; font-size: 0.9rem; padding: 10px; background: #064e3b; border-radius: 8px; text-align: center;">
+            Ciao! Sono Gemini, l'assistente AI. Puoi farmi domande su oro, argento, bitcoin, borsa e molto altro!
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="ai-input" placeholder="Fai una domanda..." style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: white; outline: none; font-size: 0.95rem;" onkeypress="if(event.key==='Enter') askAI();">
+          <button onclick="askAI()" style="padding: 12px 20px; background: var(--primary); color: #064e3b; border: none; border-radius: 8px; font-weight: 800; cursor: pointer; min-width: 80px;">Invia</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', chatHTML);
+  document.getElementById('ai-input').focus();
+}
+
+async function askAI() {
+  const input = document.getElementById('ai-input');
+  const chatBox = document.getElementById('ai-chat-box');
+  const question = input.value.trim();
+  
+  if (!question) return;
+  
+  // Mostra domanda utente
+  const userMsg = document.createElement('div');
+  userMsg.style.cssText = 'margin-bottom: 12px; text-align: right; display: flex; justify-content: flex-end;';
+  userMsg.innerHTML = `
+    <div style="background: var(--primary); color: #064e3b; padding: 10px 12px; border-radius: 8px; max-width: 80%; word-wrap: break-word;">
+      ${question}
+    </div>
+  `;
+  chatBox.appendChild(userMsg);
+  
+  input.value = '';
+  input.disabled = true;
+  
+  // Mostra loading
+  const loadingMsg = document.createElement('div');
+  loadingMsg.id = 'loading-msg';
+  loadingMsg.style.cssText = 'margin-bottom: 12px; display: flex; gap: 8px;';
+  loadingMsg.innerHTML = `
+    <div style="background: var(--border); color: #cbd5e1; padding: 10px 12px; border-radius: 8px;">
+      <span class="loader" style="width: 14px; height: 14px; border: 2px solid var(--border); border-top: 2px solid var(--primary); display: inline-block; margin-right: 8px;"></span>
+      Gemini sta pensando...
+    </div>
+  `;
+  chatBox.appendChild(loadingMsg);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  
+  try {
+    const response = await askGemini(question);
+    
+    // Rimuovi loading
+    loadingMsg.remove();
+    
+    // Mostra risposta
+    const aiMsg = document.createElement('div');
+    aiMsg.style.cssText = 'margin-bottom: 12px; display: flex; justify-content: flex-start;';
+    aiMsg.innerHTML = `
+      <div style="background: #1e293b; color: #cbd5e1; padding: 10px 12px; border-radius: 8px; border-left: 3px solid var(--primary); max-width: 80%; word-wrap: break-word;">
+        ${response.replace(/\n/g, '<br>')}
+      </div>
+    `;
+    chatBox.appendChild(aiMsg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  } catch (e) {
+    console.error('Errore:', e);
+    loadingMsg.remove();
+    
+    const errorMsg = document.createElement('div');
+    errorMsg.style.cssText = 'margin-bottom: 12px; display: flex; justify-content: flex-start;';
+    errorMsg.innerHTML = `
+      <div style="background: #7f1d1d; color: #fecaca; padding: 10px 12px; border-radius: 8px; border-left: 3px solid #ef4444;">
+        Errore: ${e.message || 'Errore sconosciuto'}
+      </div>
+    `;
+    chatBox.appendChild(errorMsg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+  
+  input.disabled = false;
+  input.focus();
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   // Ripristina unità selezionata
