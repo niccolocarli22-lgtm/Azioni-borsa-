@@ -270,29 +270,50 @@ async function loadNews() {
     if (isCacheValid('news')) {
       news = cache.news.data;
     } else {
-      // Usa NewsAPI per notizie in italiano
+      // Prova NewsAPI per notizie in italiano
       const newsApiKey = "300c4587a894469e87c93c60c78837fb";
-      const newsApiUrl = `https://newsapi.org/v2/everything?q=oro+argento+bitcoin+borsa&language=it&sortBy=publishedAt&apiKey=${newsApiKey}`;
+      const newsApiUrl = `https://newsapi.org/v2/everything?q=oro+argento+bitcoin+borsa&language=it&sortBy=publishedAt&pageSize=10&apiKey=${newsApiKey}`;
       
-      const res = await fetch(newsApiUrl).then(r => r.json());
-      if (res?.articles) {
-        news = res.articles;
-        cache.news.data = news;
-        cache.news.timestamp = Date.now();
+      try {
+        const res = await fetch(newsApiUrl).then(r => r.json());
+        if (res?.articles && res.articles.length > 0) {
+          news = res.articles;
+          cache.news.data = news;
+          cache.news.timestamp = Date.now();
+        } else {
+          throw new Error('No articles');
+        }
+      } catch (newsError) {
+        console.warn('NewsAPI fallback:', newsError);
+        // Fallback a Finnhub se NewsAPI fallisce
+        const res = await fetchFinnhub('/news', { category: 'general' });
+        if (res && Array.isArray(res)) {
+          news = res;
+          cache.news.data = news;
+          cache.news.timestamp = Date.now();
+        }
       }
     }
     
     if (news && Array.isArray(news) && news.length > 0) {
-      document.getElementById('news-list').innerHTML = news.slice(0, 8).map(n => `
-        <div class="news-card">
-          <a href="${n.url}" target="_blank" rel="noopener noreferrer">
-            ● ${n.title.substring(0, 70)}${n.title.length > 70 ? '...' : ''}
-          </a>
-          <div style="font-size: 0.7rem; color: #64748b; margin-top: 3px;">
-            ${new Date(n.publishedAt).toLocaleString('it-IT')}
+      document.getElementById('news-list').innerHTML = news.slice(0, 8).map(n => {
+        // Support sia NewsAPI che Finnhub format
+        const title = n.title || n.headline;
+        const url = n.url || n.url;
+        const date = n.publishedAt ? new Date(n.publishedAt).toLocaleString('it-IT') : 
+                     n.datetime ? new Date(n.datetime * 1000).toLocaleString('it-IT') : 'Ora sconosciuta';
+        
+        return `
+          <div class="news-card">
+            <a href="${url}" target="_blank" rel="noopener noreferrer">
+              ● ${title.substring(0, 70)}${title.length > 70 ? '...' : ''}
+            </a>
+            <div style="font-size: 0.7rem; color: #64748b; margin-top: 3px;">
+              ${date}
+            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
       document.getElementById('news-status').textContent = '✓ Notizie aggiornate';
     } else {
       document.getElementById('news-list').innerHTML = '<p style="color:#94a3b8; font-size: 0.9rem;">Notizie non disponibili al momento</p>';
@@ -504,7 +525,7 @@ window.addEventListener('offline', () => {
 // ===== AI GEMINI =====
 
 const GEMINI_API_KEY = "AIzaSyAaZXjK0BIIiLQUqOe0ds9wS8zg13wCfWM";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
 async function askGemini(question) {
   try {
@@ -523,20 +544,40 @@ Domanda: ${question}`;
 
     const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+        }
       })
     });
 
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Gemini API Error:', errorData);
+      throw new Error(`API Error: ${response.status} - ${errorData?.error?.message || 'Unknown error'}`);
+    }
+
     const data = await response.json();
     
-    if (data.candidates && data.candidates[0]) {
-      return data.candidates[0].content.parts[0].text;
+    if (data.candidates && data.candidates.length > 0 && data.candidates[0].content) {
+      const text = data.candidates[0].content.parts[0].text;
+      return text || 'Nessuna risposta ricevuta';
     } else {
-      throw new Error('Risposta Gemini non valida');
+      console.error('Invalid Gemini response:', data);
+      throw new Error('Formato risposta Gemini non valido');
     }
   } catch (e) {
     console.error('Errore Gemini:', e);
