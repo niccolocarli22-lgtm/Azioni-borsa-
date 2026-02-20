@@ -3,119 +3,163 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Borsa Carli Pro - Yahoo Direct €</title>
+  <title>Borsa Carli Pro - Precision Edition</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     :root { --primary: #34d399; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --up: #10b981; }
-    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 50px; }
     header { background: #1e293b; padding: 15px; text-align: center; border-bottom: 3px solid var(--primary); }
-    main { padding: 15px; max-width: 1200px; margin: auto; display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
-    @media (max-width: 850px) { main { grid-template-columns: 1fr; } }
+    main { padding: 15px; max-width: 1200px; margin: auto; }
     
-    .box { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid #334155; }
-    .m-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-    .m-card { background: #0f172a; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--primary); }
-    .price-big { font-size: 1.4rem; font-weight: 800; color: var(--up); display: block; margin-top: 5px; }
-    
-    .unit-btn { background: #334155; border: none; color: #94a3b8; padding: 8px 15px; border-radius: 8px; cursor: pointer; margin-bottom: 15px; font-weight: 600; }
-    .unit-btn.active { background: var(--primary); color: #064e3b; }
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
+    @media (max-width: 850px) { .dashboard-grid { grid-template-columns: 1fr; } }
 
+    .m-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .m-card { background: var(--card); padding: 15px; border-radius: 16px; text-align: center; border: 1px solid #334155; }
+    .price-big { font-size: 1.3rem; font-weight: 800; color: var(--up); display: block; margin-top: 5px; }
+
+    .box { background: var(--card); padding: 15px; border-radius: 16px; border: 1px solid #334155; margin-bottom: 20px; }
     .news-card { padding: 10px 0; border-bottom: 1px solid #334155; font-size: 0.85rem; }
     .news-card a { color: #cbd5e1; text-decoration: none; }
-    .search-box { display: flex; gap: 8px; margin-bottom: 20px; }
-    input { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; }
+    
+    .unit-selector { display: flex; justify-content: center; gap: 5px; margin-bottom: 15px; }
+    .u-btn { background: #334155; border: none; color: #94a3b8; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+    .u-btn.active { background: var(--primary); color: #064e3b; }
+
+    .search-box { display: flex; gap: 8px; margin: 20px 0; }
+    input { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: white; outline: none; }
     .btn-p { background: var(--primary); color: #064e3b; border: none; padding: 0 20px; border-radius: 10px; font-weight: 800; cursor: pointer; }
+    #chart-container { height: 450px; border-radius: 16px; overflow: hidden; display: none; border: 1px solid #334155; margin-top: 20px; }
   </style>
 </head>
 <body>
 
-<header><h1>BORSA <span style="color:var(--primary)">CARLI</span> PRO</h1></header>
+<header>
+  <h1 style="margin:0; font-size: 1.2rem;">BORSA <span style="color:var(--primary)">CARLI</span> PRO</h1>
+</header>
 
 <main>
-  <div class="box">
-    <h3 style="color:var(--primary); margin-top:0;">NEWS MERCATO</h3>
-    <div id="news-list">Caricamento...</div>
-  </div>
-
-  <div>
-    <div style="text-align:center;">
-        <button class="unit-btn active" id="btn-oz" onclick="updateView('oz')">Oncia</button>
-        <button class="unit-btn" id="btn-50g" onclick="updateView('50g')">50 Grammi</button>
-        <button class="unit-btn" id="btn-100g" onclick="updateView('100g')">100 Grammi</button>
+  <div class="dashboard-grid">
+    <div class="box">
+      <h3 style="margin:0 0 15px 0; color:var(--primary); font-size: 0.9rem; text-transform: uppercase;">Notizie Mercato</h3>
+      <div id="news-list">Caricamento notizie...</div>
     </div>
 
-    <div class="m-grid">
-      <div class="m-card"><strong>ORO (€)</strong><span id="gold-p" class="price-big">---</span></div>
-      <div class="m-card"><strong>ARGENTO (€)</strong><span id="silver-p" class="price-big">---</span></div>
-    </div>
+    <div>
+      <div class="unit-selector">
+        <button class="u-btn active" id="btn-oz" onclick="setUnit('oz', this)">Oncia</button>
+        <button class="u-btn" id="btn-50g" onclick="setUnit('50g', this)">50g</button>
+        <button class="u-btn" id="btn-100g" onclick="setUnit('100g', this)">100g</button>
+      </div>
 
-    <div class="search-box">
-      <input type="text" id="sInput" placeholder="Cerca Azione (RACE, ENI.MI...)">
-      <button class="btn-p" onclick="doSearch()">CERCA</button>
+      <div class="m-grid">
+        <div class="m-card"><strong>ORO (€)</strong><span id="gold-p" class="price-big">---</span></div>
+        <div class="m-card"><strong>ARGENTO (€)</strong><span id="silver-p" class="price-big">---</span></div>
+        <div class="m-card"><strong>ALLUMINIO (Ton)</strong><span id="alu-p" class="price-big">---</span></div>
+        <div class="m-card"><strong>BITCOIN (€)</strong><span id="btc-p" class="price-big">---</span></div>
+      </div>
+
+      <div class="search-box">
+        <input type="text" id="sInput" placeholder="Cerca: RACE, ENEL.MI, AAPL...">
+        <button class="btn-p" onclick="doSearch()">CERCA</button>
+      </div>
+
+      <div id="results-list"></div>
+      <div id="chart-container"><div id="tv-widget" style="height:100%"></div></div>
     </div>
-    <div id="res-box"></div>
   </div>
 </main>
 
+<script src="https://s3.tradingview.com/tv.js"></script>
 <script>
   const API_KEY = "d6b3blpr01qnr27jgq90d6b3blpr01qnr27jgq9g";
-  let currentPrices = { gold: 0, silver: 0 };
-  let currentMode = 'oz';
+  let fxRate = 0.92;
+  let mode = 'oz';
+  let rawGoldUSD = 0;
+  let rawSilverUSD = 0;
 
-  async function getYahooPrice(ticker) {
+  async function fetchYahoo(ticker) {
     try {
-      // Usiamo Yahoo direttamente per i ticker in Euro
-      const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`).then(res => res.json());
-      return r.chart.result[0].meta.regularMarketPrice;
+      const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`).then(r => r.json());
+      return res.chart.result[0].meta.regularMarketPrice;
     } catch(e) { return null; }
   }
 
-  async function loadData() {
-    // Prendiamo l'oro e l'argento DIRETTAMENTE IN EURO da Yahoo
-    currentPrices.gold = await getYahooPrice('XAUER=X') || 2650; 
-    currentPrices.silver = await getYahooPrice('XAGER=X') || 30;
-    
-    updateView(currentMode);
-    loadNews();
+  async function updateAll() {
+    // 1. Prendi il cambio EUR/USD esatto
+    const fxRes = await fetch(`https://finnhub.io/api/v1/quote?symbol=FX:EURUSD&token=${API_KEY}`).then(r => r.json());
+    if(fxRes.c) fxRate = 1 / fxRes.c;
+
+    // 2. Prendi metalli in USD (più stabili come feed)
+    rawGoldUSD = await fetchYahoo('GC=F') || 2850;
+    rawSilverUSD = await fetchYahoo('SI=F') || 33;
+    let aluUSD = await fetchYahoo('ALI=F') || 2600;
+
+    // 3. Bitcoin
+    const btcData = await fetch(`https://finnhub.io/api/v1/quote?symbol=BINANCE:BTCUSDT&token=${API_KEY}`).then(r => r.json());
+    let btcEUR = btcData.c * fxRate;
+
+    // Rendering
+    renderPrices();
+    document.getElementById('alu-p').innerText = (aluUSD * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+    document.getElementById('btc-p').innerText = btcEUR.toLocaleString('it-IT', {style:'currency', currency:'EUR'});
   }
 
-  function updateView(mode) {
-    currentMode = mode;
-    document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(`btn-${mode}`).classList.add('active');
+  function renderPrices() {
+    const TROY_OZ = 31.1034768;
+    let goldEUR = rawGoldUSD * fxRate;
+    let silverEUR = rawSilverUSD * fxRate;
 
-    const ozToGram = 31.1035;
-    let gPrice = mode === 'oz' ? currentPrices.gold : 
-                mode === '50g' ? (currentPrices.gold / ozToGram) * 50 : 
-                (currentPrices.gold / ozToGram) * 100;
+    let gVal, sVal;
+    if(mode === 'oz') { gVal = goldEUR; sVal = silverEUR; }
+    else if(mode === '50g') { gVal = (goldEUR / TROY_OZ) * 50; sVal = (silverEUR / TROY_OZ) * 50; }
+    else { gVal = (goldEUR / TROY_OZ) * 100; sVal = (silverEUR / TROY_OZ) * 100; }
 
-    let sPrice = mode === 'oz' ? currentPrices.silver : 
-                mode === '50g' ? (currentPrices.silver / ozToGram) * 50 : 
-                (currentPrices.silver / ozToGram) * 100;
+    document.getElementById('gold-p').innerText = gVal.toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+    document.getElementById('silver-p').innerText = sVal.toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+  }
 
-    document.getElementById('gold-p').innerText = gPrice.toLocaleString('it-IT', {style:'currency', currency:'EUR'});
-    document.getElementById('silver-p').innerText = sPrice.toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+  function setUnit(m, btn) {
+    mode = m;
+    document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderPrices();
   }
 
   async function loadNews() {
-    const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${API_KEY}`).then(r => r.json());
-    document.getElementById('news-list').innerHTML = res.slice(0, 7).map(n => `
-      <div class="news-card"><a href="${n.url}" target="_blank">• ${n.headline.substring(0,60)}...</a></div>
-    `).join('');
+    try {
+      const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${API_KEY}`).then(r => r.json());
+      document.getElementById('news-list').innerHTML = res.slice(0, 8).map(n => `
+        <div class="news-card"><a href="${n.url}" target="_blank">● ${n.headline.substring(0,70)}...</a></div>
+      `).join('');
+    } catch(e) {}
   }
 
   async function doSearch() {
-    const q = document.getElementById('sInput').value.toUpperCase();
-    const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${q}&token=${API_KEY}`).then(res => res.json());
-    if(r.c) {
-        document.getElementById('res-box').innerHTML = `
-          <div class="m-card" style="margin-top:10px;">
-            <strong>${q}</strong><br><span class="price-big">${r.c.toFixed(2)} €</span>
-          </div>`;
+    const q = document.getElementById('sInput').value.trim().toUpperCase();
+    const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${q}&token=${API_KEY}`).then(r => r.json());
+    if(res.c) {
+      const p = q.includes('.MI') ? res.c : (res.c * fxRate);
+      document.getElementById('results-list').innerHTML = `
+        <div class="m-card" onclick="openChart('${q}')" style="cursor:pointer; border-color:var(--primary); margin-top:10px;">
+          <strong>${q}</strong><br><span class="price-big">${p.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>
+        </div>`;
     }
   }
 
-  loadData();
+  function openChart(s) {
+    document.getElementById('chart-container').style.display = "block";
+    document.getElementById('tv-widget').innerHTML = "";
+    new TradingView.widget({
+      "autosize": true, "symbol": s.includes('.MI') ? `MILAN:${s.split('.')[0]}` : s,
+      "interval": "D", "theme": "dark", "container_id": "tv-widget"
+    });
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  }
+
+  updateAll();
+  loadNews();
+  setInterval(updateAll, 60000);
 </script>
 </body>
 </html>
