@@ -434,36 +434,42 @@ Dati attuali:
 - Bitcoin: $${state.rawBtcUSD}
 - Cambio EUR/USD: ${state.fxRate.toFixed(4)}
 
-Rispondi in italiano, conciso e professionale. Max 3 paragrafi.
+Rispondi in italiano, conciso e professionale. Max 2-3 paragrafi.
 
 Domanda: ${question}`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro-latest:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{
-          role: "user",
           parts: [{ text: prompt }]
-        }]
+        }],
+        safetySettings: [
+          { category: "HARM_CATEGORY_UNSPECIFIED", threshold: "BLOCK_NONE" }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          topP: 0.95,
+          topK: 40,
+          maxOutputTokens: 500
+        }
       })
     });
 
     const data = await response.json();
     
     if (!response.ok) {
-      console.error('Gemini API Error:', data);
-      throw new Error(data?.error?.message || `API Error ${response.status}`);
+      console.error('Gemini Error:', data);
+      throw new Error(data?.error?.message || `Status ${response.status}`);
     }
 
-    if (data.candidates && data.candidates.length > 0) {
-      const content = data.candidates[0].content;
-      if (content && content.parts && content.parts.length > 0) {
-        return content.parts[0].text;
-      }
+    if (data.candidates && data.candidates[0]) {
+      const text = data.candidates[0].content.parts[0].text;
+      return text || 'Nessuna risposta';
     }
     
-    throw new Error('Nessun contenuto nella risposta Gemini');
+    throw new Error('Nessun contenuto nella risposta');
   } catch (e) {
     console.error('Errore Gemini:', e);
     throw e;
