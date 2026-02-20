@@ -1,0 +1,33 @@
+{
+  "name": "borsacarli",
+  "version": "1.0.0",
+  "description": "Quotazioni in tempo reale di oro fisico, argento e criptovalute",
+  "type": "module",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "start:node": "npx http-server -p 8000 -g",
+    "test": "echo 'No tests yet'",
+    "build": "echo 'Static site - no build needed'",
+    "analyze": "source-map-explorer 'app.js'"
+  },
+  "keywords": [
+    "oro",
+    "argento",
+    "metalli",
+    "criptovalute",
+    "bitcoin",
+    "quotazioni",
+    "finanza",
+    "pwa"
+  ],
+  "author": "Borsa Carli",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/borsacarli.git"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

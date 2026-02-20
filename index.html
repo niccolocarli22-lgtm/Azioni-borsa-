@@ -3,48 +3,211 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#34d399">
+  <meta name="description" content="Quotazioni in tempo reale di oro fisico, argento, alluminio e criptovalute. Analisi mercati e notizie finanziarie.">
   <title>Borsa Carli - Quotazioni Oro Fisico</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    :root { --primary: #34d399; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --up: #10b981; }
-    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 50px; }
-    header { background: #1e293b; padding: 15px; text-align: center; border-bottom: 3px solid var(--primary); }
+    :root { 
+      --primary: #34d399; 
+      --bg: #0f172a; 
+      --card: #1e293b; 
+      --text: #f8fafc; 
+      --up: #10b981; 
+      --down: #ef4444;
+      --border: #334155;
+    }
+    
+    * { box-sizing: border-box; }
+    body { 
+      font-family: 'Inter', sans-serif; 
+      background: var(--bg); 
+      color: var(--text); 
+      margin: 0; 
+      padding-bottom: 50px;
+    }
+    
+    header { 
+      background: var(--card); 
+      padding: 15px; 
+      text-align: center; 
+      border-bottom: 3px solid var(--primary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    header h1 { margin: 0; font-size: 1.2rem; flex: 1; }
+    
+    .header-controls { display: flex; gap: 10px; align-items: center; }
+    .header-btn { background: var(--border); border: none; color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
+    .header-btn:hover { background: var(--primary); color: #064e3b; }
+    
     main { padding: 15px; max-width: 1200px; margin: auto; }
     
     .dashboard-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
     @media (max-width: 850px) { .dashboard-grid { grid-template-columns: 1fr; } }
 
     .m-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-    .m-card { background: var(--card); padding: 20px; border-radius: 16px; text-align: center; border: 1px solid #334155; position: relative; }
+    @media (max-width: 600px) { .m-grid { grid-template-columns: 1fr; } }
+    
+    .m-card { 
+      background: var(--card); 
+      padding: 20px; 
+      border-radius: 16px; 
+      text-align: center; 
+      border: 1px solid var(--border); 
+      position: relative;
+      transition: 0.3s;
+    }
+    
+    .m-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .m-card.loading { opacity: 0.6; }
     .m-card strong { font-size: 0.8rem; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
     .price-big { font-size: 1.5rem; font-weight: 800; color: var(--up); display: block; margin-top: 8px; }
+    .price-change { font-size: 0.75rem; margin-top: 4px; }
+    .price-change.positive { color: var(--up); }
+    .price-change.negative { color: var(--down); }
     .info-tag { font-size: 0.65rem; color: #94a3b8; margin-top: 5px; display: block; }
 
-    .box { background: var(--card); padding: 15px; border-radius: 16px; border: 1px solid #334155; margin-bottom: 20px; }
-    .news-card { padding: 10px 0; border-bottom: 1px solid #334155; font-size: 0.85rem; }
+    .box { 
+      background: var(--card); 
+      padding: 15px; 
+      border-radius: 16px; 
+      border: 1px solid var(--border); 
+      margin-bottom: 20px; 
+    }
+    
+    .news-card { 
+      padding: 10px 0; 
+      border-bottom: 1px solid var(--border); 
+      font-size: 0.85rem;
+      transition: 0.2s;
+    }
+    
+    .news-card:last-child { border-bottom: none; }
     .news-card a { color: #cbd5e1; text-decoration: none; }
+    .news-card a:hover { color: var(--primary); }
     
     .unit-selector { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-    .u-btn { background: #334155; border: none; color: #94a3b8; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-size: 0.85rem; font-weight: 800; transition: 0.2s; }
+    .u-btn { 
+      background: var(--border); 
+      border: none; 
+      color: #94a3b8; 
+      padding: 10px 16px; 
+      border-radius: 10px; 
+      cursor: pointer; 
+      font-size: 0.85rem; 
+      font-weight: 800; 
+      transition: 0.2s;
+    }
+    
+    .u-btn:hover { background: #475569; }
     .u-btn.active { background: var(--primary); color: #064e3b; transform: scale(1.05); }
 
     .search-box { display: flex; gap: 8px; margin: 20px 0; }
-    input { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: white; outline: none; }
-    .btn-p { background: var(--primary); color: #064e3b; border: none; padding: 0 20px; border-radius: 10px; font-weight: 800; cursor: pointer; }
-    #chart-container { height: 400px; border-radius: 16px; overflow: hidden; display: none; border: 1px solid #334155; margin-top: 20px; }
+    input { 
+      flex: 1; 
+      padding: 12px; 
+      border-radius: 10px; 
+      border: 1px solid var(--border); 
+      background: var(--card); 
+      color: white; 
+      outline: none;
+      transition: 0.2s;
+    }
+    
+    input:focus { border-color: var(--primary); }
+    
+    .btn-p { 
+      background: var(--primary); 
+      color: #064e3b; 
+      border: none; 
+      padding: 12px 20px; 
+      border-radius: 10px; 
+      font-weight: 800; 
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    
+    .btn-p:hover { transform: scale(1.05); }
+    .btn-p:active { transform: scale(0.95); }
+    
+    .status-bar { 
+      font-size: 0.75rem; 
+      color: #94a3b8; 
+      text-align: center; 
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    
+    .status-bar.online { color: var(--up); }
+    .status-bar.offline { color: var(--down); }
+    
+    #chart-container { 
+      height: 400px; 
+      border-radius: 16px; 
+      overflow: hidden; 
+      display: none; 
+      border: 1px solid var(--border); 
+      margin-top: 20px; 
+    }
+    
+    .error-message { 
+      background: #7f1d1d; 
+      color: #fecaca; 
+      padding: 12px; 
+      border-radius: 8px; 
+      margin-bottom: 15px;
+      border-left: 4px solid var(--down);
+    }
+    
+    .success-message { 
+      background: #064e3b; 
+      color: #a7f3d0; 
+      padding: 12px; 
+      border-radius: 8px; 
+      margin-bottom: 15px;
+      border-left: 4px solid var(--up);
+    }
+    
+    .loader { 
+      display: inline-block; 
+      width: 16px; 
+      height: 16px; 
+      border: 2px solid var(--border); 
+      border-top: 2px solid var(--primary); 
+      border-radius: 50%; 
+      animation: spin 0.8s linear infinite; 
+    }
+    
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
 <header>
   <h1 style="margin:0; font-size: 1.2rem;">BORSA <span style="color:var(--primary)">CARLI</span> - FISICO</h1>
+  <div class="header-controls">
+    <button class="header-btn" id="refresh-btn" onclick="manualRefresh()" title="Aggiorna dati">🔄</button>
+    <button class="header-btn" id="settings-btn" onclick="toggleSettings()" title="Impostazioni">⚙️</button>
+  </div>
 </header>
 
 <main>
+  <div id="error-container"></div>
+  
   <div class="dashboard-grid">
     <div class="box">
       <h3 style="margin:0 0 15px 0; color:var(--primary); font-size: 0.9rem; text-transform: uppercase;">Notizie Mercato</h3>
-      <div id="news-list">Caricamento notizie...</div>
+      <div id="news-list">
+        <div style="text-align: center; padding: 20px;">
+          <div class="loader"></div>
+          <p style="margin-top: 10px; font-size: 0.9rem;">Caricamento notizie...</p>
+        </div>
+      </div>
+      <div class="status-bar" id="news-status"></div>
     </div>
 
     <div>
@@ -59,19 +222,31 @@
         <div class="m-card">
             <strong>Oro Lingotto</strong>
             <span id="gold-p" class="price-big">---</span>
+            <span class="price-change" id="gold-change"></span>
             <span class="info-tag" id="gold-info">Quotazione Oro Fisico 24kt</span>
         </div>
         <div class="m-card">
             <strong>Argento Fisico</strong>
             <span id="silver-p" class="price-big">---</span>
+            <span class="price-change" id="silver-change"></span>
             <span class="info-tag">Prezzo al dettaglio stimato</span>
         </div>
-        <div class="m-card"><strong>Alluminio</strong><span id="alu-p" class="price-big">---</span><span class="info-tag">Prezzo per Tonnellata</span></div>
-        <div class="m-card"><strong>Bitcoin</strong><span id="btc-p" class="price-big">---</span><span class="info-tag">Prezzo Crypto in €</span></div>
+        <div class="m-card">
+          <strong>Alluminio</strong>
+          <span id="alu-p" class="price-big">---</span>
+          <span class="price-change" id="alu-change"></span>
+          <span class="info-tag">Prezzo per Tonnellata</span>
+        </div>
+        <div class="m-card">
+          <strong>Bitcoin</strong>
+          <span id="btc-p" class="price-big">---</span>
+          <span class="price-change" id="btc-change"></span>
+          <span class="info-tag">Prezzo Crypto in €</span>
+        </div>
       </div>
 
       <div class="search-box">
-        <input type="text" id="sInput" placeholder="Cerca Azioni (RACE, ENEL.MI...)">
+        <input type="text" id="sInput" placeholder="Cerca Azioni (RACE, ENEL.MI...)" onkeypress="if(event.key==='Enter')doSearch()">
         <button class="btn-p" onclick="doSearch()">CERCA</button>
       </div>
 
@@ -79,91 +254,11 @@
       <div id="chart-container"><div id="tv-widget" style="height:100%"></div></div>
     </div>
   </div>
+  
+  <div class="status-bar online" id="main-status">Connesso • Ultimo aggiornamento: --:--</div>
 </main>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
-<script>
-  const API_KEY = "d6b3blpr01qnr27jgq90d6b3blpr01qnr27jgq9g";
-  let fxRate = 0.925;
-  let mode = '100g';
-  let rawGoldUSD = 0;
-  let rawSilverUSD = 0;
-
-  async function fetchYahoo(ticker) {
-    try {
-      const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`).then(r => r.json());
-      return res.chart.result[0].meta.regularMarketPrice;
-    } catch(e) { return null; }
-  }
-
-  async function updateAll() {
-    const fxRes = await fetch(`https://finnhub.io/api/v1/quote?symbol=FX:EURUSD&token=${API_KEY}`).then(r => r.json());
-    if(fxRes.c) fxRate = 1 / fxRes.c;
-
-    rawGoldUSD = await fetchYahoo('GC=F') || 2850;
-    rawSilverUSD = await fetchYahoo('SI=F') || 33;
-    let aluUSD = await fetchYahoo('ALI=F') || 2600;
-    const btcData = await fetch(`https://finnhub.io/api/v1/quote?symbol=BINANCE:BTCUSDT&token=${API_KEY}`).then(r => r.json());
-
-    renderPrices();
-    document.getElementById('alu-p').innerText = (aluUSD * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
-    document.getElementById('btc-p').innerText = (btcData.c * fxRate).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
-  }
-
-  function renderPrices() {
-    const TROY_OZ = 31.1034768;
-    
-    // SPREAD FISICO (Tipo Bolaffi/Orovilla)
-    // Più il pezzo è piccolo, più la commissione è alta
-    let spread = 1.03; // Base 3% per 100g
-    if(mode === '1g') spread = 1.15; // 15% per il pezzo da 1g
-    if(mode === 'oz') spread = 1.05; // 5% per l'oncia
-    if(mode === '50g') spread = 1.04; // 4% per i 50g
-
-    let goldEUR = rawGoldUSD * fxRate * spread;
-    let silverEUR = rawSilverUSD * fxRate * 1.10; // Argento fisico ha spread alti (10%+)
-
-    let gVal;
-    if(mode === 'oz') gVal = goldEUR;
-    else if(mode === '1g') gVal = (goldEUR / TROY_OZ);
-    else if(mode === '50g') gVal = (goldEUR / TROY_OZ) * 50;
-    else gVal = (goldEUR / TROY_OZ) * 100;
-
-    document.getElementById('gold-p').innerText = gVal.toLocaleString('it-IT', {style:'currency', currency:'EUR'});
-    document.getElementById('silver-p').innerText = ((silverEUR / TROY_OZ) * (mode === 'oz' ? TROY_OZ : parseInt(mode))).toLocaleString('it-IT', {style:'currency', currency:'EUR'});
-    document.getElementById('gold-info').innerText = `Quotazione Lingotto ${mode} (Inc. Spread)`;
-  }
-
-  function setUnit(m, btn) {
-    mode = m;
-    document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    renderPrices();
-  }
-
-  async function loadNews() {
-    const res = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${API_KEY}`).then(r => r.json());
-    document.getElementById('news-list').innerHTML = res.slice(0, 8).map(n => `
-      <div class="news-card"><a href="${n.url}" target="_blank">● ${n.headline.substring(0,70)}...</a></div>
-    `).join('');
-  }
-
-  async function doSearch() {
-    const q = document.getElementById('sInput').value.trim().toUpperCase();
-    const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${q}&token=${API_KEY}`).then(r => r.json());
-    if(res.c) {
-      const p = q.includes('.MI') ? res.c : (res.c * fxRate);
-      document.getElementById('results-list').innerHTML = `<div class="m-card" onclick="openChart('${q}')" style="cursor:pointer; border-color:var(--primary); margin-top:10px;"><strong>${q}</strong><br><span class="price-big">${p.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span></div>`;
-    }
-  }
-
-  function openChart(s) {
-    document.getElementById('chart-container').style.display = "block";
-    document.getElementById('tv-widget').innerHTML = "";
-    new TradingView.widget({"autosize": true, "symbol": s.includes('.MI') ? `MILAN:${s.split('.')[0]}` : s, "theme": "dark", "container_id": "tv-widget"});
-  }
-
-  updateAll(); loadNews(); setInterval(updateAll, 60000);
-</script>
+<script src="app.js"></script>
 </body>
 </html>

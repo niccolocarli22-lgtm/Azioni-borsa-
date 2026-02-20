@@ -1,11 +1,22 @@
 {
   "short_name": "BorsaCarli",
-  "name": "Borsa Carli 2026",
-  "description": "Analisi Mercati e Metalli in tempo reale",
+  "name": "Borsa Carli - Quotazioni Metalli Preziosi",
+  "description": "Quotazioni in tempo reale di oro fisico, argento, alluminio e criptovalute. Analisi mercati e notizie finanziarie.",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#020617",
-  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#34d399",
+  "categories": ["finance", "productivity"],
+  "screenshots": [
+    {
+      "src": "icona.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
   "icons": [
     {
       "src": "icona.png",
@@ -18,6 +29,34 @@
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quotazioni Oro",
+      "short_name": "Oro",
+      "description": "Visualizza quotazioni dell'oro",
+      "url": "./index.html?unit=100g",
+      "icons": [
+        {
+          "src": "icona.png",
+          "sizes": "512x512",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Ricerca Azioni",
+      "short_name": "Ricerca",
+      "description": "Cerca quotazioni azioni",
+      "url": "./index.html#search",
+      "icons": [
+        {
+          "src": "icona.png",
+          "sizes": "512x512",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
