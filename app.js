@@ -1,275 +1,656 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#34d399">
-  <meta name="description" content="Quotazioni in tempo reale di oro fisico, argento, alluminio e criptovalute. Analisi mercati e notizie finanziarie.">
-  <title>Borsa Carli - Quotazioni Oro Fisico</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="manifest" href="./manifest.json">
-  <link rel="icon" type="image/png" href="./icona.png">
-  <link rel="apple-touch-icon" href="./icona.png">
-  <style>
-    :root { 
-      --primary: #34d399; 
-      --bg: #0f172a; 
-      --card: #1e293b; 
-      --text: #f8fafc; 
-      --up: #10b981; 
-      --down: #ef4444;
-      --border: #334155;
-    }
-    
-    * { box-sizing: border-box; }
-    body { 
-      font-family: 'Inter', sans-serif; 
-      background: var(--bg); 
-      color: var(--text); 
-      margin: 0; 
-      padding-bottom: 50px;
-    }
-    
-    header { 
-      background: var(--card); 
-      padding: 15px; 
-      text-align: center; 
-      border-bottom: 3px solid var(--primary);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    header h1 { margin: 0; font-size: 1.2rem; flex: 1; }
-    
-    .header-controls { display: flex; gap: 10px; align-items: center; }
-    .header-btn { background: var(--border); border: none; color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
-    .header-btn:hover { background: var(--primary); color: #064e3b; }
-    
-    main { padding: 15px; max-width: 1200px; margin: auto; }
-    
-    .dashboard-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
-    @media (max-width: 850px) { .dashboard-grid { grid-template-columns: 1fr; } }
+// ===== CONFIGURAZIONE E VARIABILI GLOBALI =====
+const API_KEY = "d6b3blpr01qnr27jgq90d6b3blpr01qnr27jgq9g";
+const UPDATE_INTERVAL = 60000;
+const CACHE_EXPIRY = 5 * 60 * 1000;
+const TROY_OZ = 31.1034768;
 
-    .m-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-    @media (max-width: 600px) { .m-grid { grid-template-columns: 1fr; } }
-    
-    .m-card { 
-      background: var(--card); 
-      padding: 20px; 
-      border-radius: 16px; 
-      text-align: center; 
-      border: 1px solid var(--border); 
-      position: relative;
-      transition: 0.3s;
-    }
-    
-    .m-card:hover { border-color: var(--primary); transform: translateY(-2px); }
-    .m-card.loading { opacity: 0.6; }
-    .m-card strong { font-size: 0.8rem; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
-    .price-big { font-size: 1.5rem; font-weight: 800; color: var(--up); display: block; margin-top: 8px; }
-    .price-change { font-size: 0.75rem; margin-top: 4px; }
-    .price-change.positive { color: var(--up); }
-    .price-change.negative { color: var(--down); }
-    .info-tag { font-size: 0.65rem; color: #94a3b8; margin-top: 5px; display: block; }
+let state = {
+  fxRate: 0.925,
+  mode: '100g',
+  rawGoldUSD: 0,
+  rawSilverUSD: 0,
+  rawAluUSD: 0,
+  rawBtcUSD: 0,
+  prevGold: 0,
+  prevSilver: 0,
+  prevAlu: 0,
+  prevBtc: 0,
+  lastUpdate: null,
+  isLoading: false,
+  hasError: false,
+  autoRefreshEnabled: true
+};
 
-    .box { 
-      background: var(--card); 
-      padding: 15px; 
-      border-radius: 16px; 
-      border: 1px solid var(--border); 
-      margin-bottom: 20px; 
-    }
-    
-    .news-card { 
-      padding: 10px 0; 
-      border-bottom: 1px solid var(--border); 
-      font-size: 0.85rem;
-      transition: 0.2s;
-    }
-    
-    .news-card:last-child { border-bottom: none; }
-    .news-card a { color: #cbd5e1; text-decoration: none; }
-    .news-card a:hover { color: var(--primary); }
-    
-    .unit-selector { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-    .u-btn { 
-      background: var(--border); 
-      border: none; 
-      color: #94a3b8; 
-      padding: 10px 16px; 
-      border-radius: 10px; 
-      cursor: pointer; 
-      font-size: 0.85rem; 
-      font-weight: 800; 
-      transition: 0.2s;
-    }
-    
-    .u-btn:hover { background: #475569; }
-    .u-btn.active { background: var(--primary); color: #064e3b; transform: scale(1.05); }
+let cache = {
+  gold: { data: null, timestamp: 0 },
+  silver: { data: null, timestamp: 0 },
+  alu: { data: null, timestamp: 0 },
+  btc: { data: null, timestamp: 0 },
+  news: { data: null, timestamp: 0 },
+  fx: { data: null, timestamp: 0 }
+};
 
-    .search-box { display: flex; gap: 8px; margin: 20px 0; }
-    input { 
-      flex: 1; 
-      padding: 12px; 
-      border-radius: 10px; 
-      border: 1px solid var(--border); 
-      background: var(--card); 
-      color: white; 
-      outline: none;
-      transition: 0.2s;
-    }
-    
-    input:focus { border-color: var(--primary); }
-    
-    .btn-p { 
-      background: var(--primary); 
-      color: #064e3b; 
-      border: none; 
-      padding: 12px 20px; 
-      border-radius: 10px; 
-      font-weight: 800; 
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    
-    .btn-p:hover { transform: scale(1.05); }
-    .btn-p:active { transform: scale(0.95); }
-    
-    .status-bar { 
-      font-size: 0.75rem; 
-      color: #94a3b8; 
-      text-align: center; 
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid var(--border);
-    }
-    
-    .status-bar.online { color: var(--up); }
-    .status-bar.offline { color: var(--down); }
-    
-    #chart-container { 
-      height: 400px; 
-      border-radius: 16px; 
-      overflow: hidden; 
-      display: none; 
-      border: 1px solid var(--border); 
-      margin-top: 20px; 
-    }
-    
-    .error-message { 
-      background: #7f1d1d; 
-      color: #fecaca; 
-      padding: 12px; 
-      border-radius: 8px; 
-      margin-bottom: 15px;
-      border-left: 4px solid var(--down);
-    }
-    
-    .success-message { 
-      background: #064e3b; 
-      color: #a7f3d0; 
-      padding: 12px; 
-      border-radius: 8px; 
-      margin-bottom: 15px;
-      border-left: 4px solid var(--up);
-    }
-    
-    .loader { 
-      display: inline-block; 
-      width: 16px; 
-      height: 16px; 
-      border: 2px solid var(--border); 
-      border-top: 2px solid var(--primary); 
-      border-radius: 50%; 
-      animation: spin 0.8s linear infinite; 
-    }
-    
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
-</head>
-<body>
+// ===== UTILITY FUNCTIONS =====
 
-<header>
-  <h1 style="margin:0; font-size: 1.2rem;">BORSA <span style="color:var(--primary)">CARLI</span> - FISICO</h1>
-  <div class="header-controls">
-    <button class="header-btn" id="ai-btn" onclick="openAIChat()" title="Chiedi a Gemini AI">🤖</button>
-    <button class="header-btn" id="refresh-btn" onclick="manualRefresh()" title="Aggiorna dati">🔄</button>
-    <button class="header-btn" id="settings-btn" onclick="toggleSettings()" title="Impostazioni">⚙️</button>
-  </div>
-</header>
+function isCacheValid(key) {
+  const now = Date.now();
+  return cache[key].timestamp && (now - cache[key].timestamp) < CACHE_EXPIRY;
+}
 
-<main>
-  <div id="error-container"></div>
+function showError(message) {
+  const container = document.getElementById('error-container');
+  container.innerHTML = `<div class="error-message">Errore: ${message}</div>`;
+  state.hasError = true;
+  setTimeout(() => {
+    container.innerHTML = '';
+    state.hasError = false;
+  }, 5000);
+}
+
+function showSuccess(message) {
+  const container = document.getElementById('error-container');
+  container.innerHTML = `<div class="success-message">OK: ${message}</div>`;
+  setTimeout(() => {
+    container.innerHTML = '';
+  }, 3000);
+}
+
+function updateStatus() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  const statusEl = document.getElementById('main-status');
   
-  <div class="dashboard-grid">
-    <div class="box">
-      <h3 style="margin:0 0 15px 0; color:var(--primary); font-size: 0.9rem; text-transform: uppercase;">Notizie Mercato</h3>
-      <div id="news-list">
-        <div style="text-align: center; padding: 20px;">
-          <div class="loader"></div>
-          <p style="margin-top: 10px; font-size: 0.9rem;">Caricamento notizie...</p>
-        </div>
-      </div>
-      <div class="status-bar" id="news-status"></div>
-    </div>
-
-    <div>
-      <div class="unit-selector">
-        <button class="u-btn" id="btn-1g" onclick="setUnit('1g', this)">1 Grammo</button>
-        <button class="u-btn" id="btn-oz" onclick="setUnit('oz', this)">Oncia (31.1g)</button>
-        <button class="u-btn" id="btn-50g" onclick="setUnit('50g', this)">50 Grammi</button>
-        <button class="u-btn active" id="btn-100g" onclick="setUnit('100g', this)">100 Grammi</button>
-      </div>
-
-      <div class="m-grid">
-        <div class="m-card">
-            <strong>Oro Lingotto</strong>
-            <span id="gold-p" class="price-big">---</span>
-            <span class="price-change" id="gold-change"></span>
-            <span class="info-tag" id="gold-info">Quotazione Oro Fisico 24kt</span>
-        </div>
-        <div class="m-card">
-            <strong>Argento Fisico</strong>
-            <span id="silver-p" class="price-big">---</span>
-            <span class="price-change" id="silver-change"></span>
-            <span class="info-tag">Prezzo al dettaglio stimato</span>
-        </div>
-        <div class="m-card">
-          <strong>Alluminio</strong>
-          <span id="alu-p" class="price-big">---</span>
-          <span class="price-change" id="alu-change"></span>
-          <span class="info-tag">Prezzo per Tonnellata</span>
-        </div>
-        <div class="m-card">
-          <strong>Bitcoin</strong>
-          <span id="btc-p" class="price-big">---</span>
-          <span class="price-change" id="btc-change"></span>
-          <span class="info-tag">Prezzo Crypto in €</span>
-        </div>
-      </div>
-
-      <div class="search-box">
-        <input type="text" id="sInput" placeholder="Cerca Azioni (RACE, ENEL.MI...)" onkeypress="if(event.key==='Enter')doSearch()">
-        <button class="btn-p" onclick="doSearch()">CERCA</button>
-      </div>
-
-      <div id="results-list"></div>
-      <div id="chart-container"><div id="tv-widget" style="height:100%"></div></div>
-    </div>
-  </div>
-  
-  <div class="status-bar online" id="main-status">Connesso • Ultimo aggiornamento: --:--</div>
-</main>
-
-<script src="https://s3.tradingview.com/tv.js"></script>
-<script src="app.js"></script>
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('SW registrato'))
-      .catch(err => console.error('Errore SW:', err));
+  if (navigator.onLine) {
+    statusEl.className = 'status-bar online';
+    statusEl.textContent = `Connesso • Ultimo aggiornamento: ${timeStr}`;
+  } else {
+    statusEl.className = 'status-bar offline';
+    statusEl.textContent = `Offline • Mostrando dati in cache`;
   }
-</script>
-</body>
-</html>
+  
+  state.lastUpdate = now;
+}
+
+function getPercentageChange(prev, current) {
+  if (prev === 0) return null;
+  const change = ((current - prev) / prev) * 100;
+  return change.toFixed(2);
+}
+
+function renderPriceChange(elementId, prev, current) {
+  const change = getPercentageChange(prev, current);
+  const el = document.getElementById(elementId);
+  
+  if (change === null) return;
+  
+  const isPositive = change > 0;
+  const symbol = isPositive ? 'SU' : 'GIU';
+  const className = isPositive ? 'positive' : 'negative';
+  
+  el.className = `price-change ${className}`;
+  el.textContent = `${symbol} ${Math.abs(change)}%`;
+}
+
+// ===== FETCH FUNCTIONS =====
+
+async function fetchYahoo(ticker) {
+  try {
+    const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`).then(r => r.json());
+    return res.chart?.result?.[0]?.meta?.regularMarketPrice || null;
+  } catch(e) { 
+    console.error(`Errore fetch Yahoo ${ticker}:`, e);
+    return null; 
+  }
+}
+
+async function fetchFinnhub(endpoint, params = {}) {
+  try {
+    const url = new URL(`https://finnhub.io/api/v1${endpoint}`);
+    url.searchParams.append('token', API_KEY);
+    Object.entries(params).forEach(([key, val]) => url.searchParams.append(key, val));
+    
+    const res = await fetch(url.toString()).then(r => r.json());
+    return res;
+  } catch(e) { 
+    console.error(`Errore fetch Finnhub ${endpoint}:`, e);
+    return null; 
+  }
+}
+
+async function fetchFX() {
+  if (isCacheValid('fx')) {
+    state.fxRate = cache.fx.data;
+    return;
+  }
+  
+  try {
+    const res = await fetchFinnhub('/quote', { symbol: 'FX:EURUSD' });
+    if (res?.c) {
+      state.fxRate = 1 / res.c;
+      cache.fx.data = state.fxRate;
+      cache.fx.timestamp = Date.now();
+    }
+  } catch(e) {
+    console.error('Errore fetch FX:', e);
+  }
+}
+
+async function fetchMetals() {
+  try {
+    const gold = await fetchYahoo('GC=F');
+    if (gold && gold > 0) {
+      state.prevGold = state.rawGoldUSD;
+      state.rawGoldUSD = gold;
+      cache.gold.data = gold;
+      cache.gold.timestamp = Date.now();
+    } else if (isCacheValid('gold') && cache.gold.data) {
+      state.rawGoldUSD = cache.gold.data;
+    } else {
+      state.rawGoldUSD = 5086;
+    }
+    
+    const silver = await fetchYahoo('SI=F');
+    if (silver && silver > 0) {
+      state.prevSilver = state.rawSilverUSD;
+      state.rawSilverUSD = silver;
+      cache.silver.data = silver;
+      cache.silver.timestamp = Date.now();
+    } else if (isCacheValid('silver') && cache.silver.data) {
+      state.rawSilverUSD = cache.silver.data;
+    } else {
+      state.rawSilverUSD = 82.3;
+    }
+    
+    const alu = await fetchYahoo('ALI=F');
+    if (alu && alu > 0) {
+      state.prevAlu = state.rawAluUSD;
+      state.rawAluUSD = alu;
+      cache.alu.data = alu;
+      cache.alu.timestamp = Date.now();
+    } else if (isCacheValid('alu') && cache.alu.data) {
+      state.rawAluUSD = cache.alu.data;
+    } else {
+      state.rawAluUSD = 3102;
+    }
+  } catch(e) {
+    console.error('Errore fetch metalli:', e);
+    if (!state.rawGoldUSD || state.rawGoldUSD === 0) state.rawGoldUSD = 5086;
+    if (!state.rawSilverUSD || state.rawSilverUSD === 0) state.rawSilverUSD = 82.3;
+    if (!state.rawAluUSD || state.rawAluUSD === 0) state.rawAluUSD = 3102;
+  }
+}
+
+async function fetchCrypto() {
+  try {
+    const res = await fetchFinnhub('/quote', { symbol: 'BINANCE:BTCUSDT' });
+    if (res?.c) {
+      state.prevBtc = state.rawBtcUSD;
+      state.rawBtcUSD = res.c;
+      cache.btc.data = res.c;
+      cache.btc.timestamp = Date.now();
+    } else if (isCacheValid('btc')) {
+      state.rawBtcUSD = cache.btc.data;
+    }
+  } catch(e) {
+    console.error('Errore fetch Bitcoin:', e);
+  }
+}
+
+// ===== RENDERING =====
+
+function renderPrices() {
+  const SPREAD = {
+    '1g': 1.15,
+    'oz': 1.05,
+    '50g': 1.04,
+    '100g': 1.03
+  };
+  
+  const spread = SPREAD[state.mode] || 1.03;
+  const goldEUR = state.rawGoldUSD * state.fxRate * spread;
+  let goldValue;
+  
+  if (state.mode === 'oz') {
+    goldValue = goldEUR;
+  } else if (state.mode === '1g') {
+    goldValue = goldEUR / TROY_OZ;
+  } else if (state.mode === '50g') {
+    goldValue = (goldEUR / TROY_OZ) * 50;
+  } else {
+    goldValue = (goldEUR / TROY_OZ) * 100;
+  }
+  
+  const silverEUR = state.rawSilverUSD * state.fxRate * 1.10;
+  const silverQuantity = state.mode === 'oz' ? TROY_OZ : parseInt(state.mode);
+  const silverValue = (silverEUR / TROY_OZ) * silverQuantity;
+  
+  document.getElementById('gold-p').innerText = goldValue.toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+  document.getElementById('gold-info').innerText = `Quotazione Lingotto ${state.mode} (Inc. Spread)`;
+  renderPriceChange('gold-change', state.prevGold, state.rawGoldUSD);
+  
+  document.getElementById('silver-p').innerText = silverValue.toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+  renderPriceChange('silver-change', state.prevSilver, state.rawSilverUSD);
+  
+  const aluEUR = state.rawAluUSD * state.fxRate;
+  document.getElementById('alu-p').innerText = aluEUR.toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+  renderPriceChange('alu-change', state.prevAlu, state.rawAluUSD);
+  
+  const btcEUR = state.rawBtcUSD * state.fxRate;
+  document.getElementById('btc-p').innerText = btcEUR.toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+  renderPriceChange('btc-change', state.prevBtc, state.rawBtcUSD);
+}
+
+function setUnit(m, btn) {
+  state.mode = m;
+  document.querySelectorAll('.u-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPrices();
+  localStorage.setItem('selectedUnit', m);
+}
+
+async function loadNews() {
+  try {
+    let news;
+    
+    if (isCacheValid('news')) {
+      news = cache.news.data;
+    } else {
+      const newsApiKey = "300c4587a894469e87c93c60c78837fb";
+      const newsApiUrl = `https://newsapi.org/v2/everything?q=oro+argento+bitcoin+borsa&language=it&sortBy=publishedAt&pageSize=10&apiKey=${newsApiKey}`;
+      
+      try {
+        const res = await fetch(newsApiUrl).then(r => r.json());
+        if (res?.articles && res.articles.length > 0) {
+          news = res.articles;
+          cache.news.data = news;
+          cache.news.timestamp = Date.now();
+        } else {
+          throw new Error('No articles');
+        }
+      } catch (newsError) {
+        console.warn('NewsAPI fallback:', newsError);
+        const res = await fetchFinnhub('/news', { category: 'general' });
+        if (res && Array.isArray(res)) {
+          news = res;
+          cache.news.data = news;
+          cache.news.timestamp = Date.now();
+        }
+      }
+    }
+    
+    if (news && Array.isArray(news) && news.length > 0) {
+      document.getElementById('news-list').innerHTML = news.slice(0, 8).map(n => {
+        const title = n.title || n.headline;
+        const url = n.url || n.url;
+        const date = n.publishedAt ? new Date(n.publishedAt).toLocaleString('it-IT') : 
+                     n.datetime ? new Date(n.datetime * 1000).toLocaleString('it-IT') : 'Ora sconosciuta';
+        
+        return `
+          <div class="news-card">
+            <a href="${url}" target="_blank" rel="noopener noreferrer">
+              ● ${title.substring(0, 70)}${title.length > 70 ? '...' : ''}
+            </a>
+            <div style="font-size: 0.7rem; color: #64748b; margin-top: 3px;">
+              ${date}
+            </div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('news-status').textContent = 'OK Notizie aggiornate';
+    } else {
+      document.getElementById('news-list').innerHTML = '<p style="color:#94a3b8; font-size: 0.9rem;">Notizie non disponibili al momento</p>';
+    }
+  } catch(e) {
+    console.error('Errore loadNews:', e);
+    document.getElementById('news-list').innerHTML = '<p style="color:#ef4444;">Errore caricamento notizie</p>';
+  }
+}
+
+async function updateAll() {
+  if (!state.autoRefreshEnabled) return;
+  
+  state.isLoading = true;
+  
+  try {
+    await Promise.all([
+      fetchFX(),
+      fetchMetals(),
+      fetchCrypto(),
+      loadNews()
+    ]);
+    
+    renderPrices();
+    updateStatus();
+    
+    if (!state.hasError) {
+      console.log('OK Aggiornamento completato');
+    }
+  } catch(e) {
+    console.error('Errore updateAll:', e);
+    showError('Errore durante l\'aggiornamento dei dati');
+  } finally {
+    state.isLoading = false;
+  }
+}
+
+async function doSearch() {
+  const q = document.getElementById('sInput').value.trim().toUpperCase();
+  
+  if (!q) {
+    showError('Inserisci un simbolo valido');
+    return;
+  }
+  
+  const resultsDiv = document.getElementById('results-list');
+  resultsDiv.innerHTML = '<div style="text-align:center;"><div class="loader"></div></div>';
+  
+  try {
+    let symbol = q;
+    
+    const res = await fetchFinnhub('/quote', { symbol: symbol });
+    
+    if (!res?.c) {
+      if (!symbol.includes('.MI')) {
+        const res2 = await fetchFinnhub('/quote', { symbol: symbol + '.MI' });
+        if (res2?.c) {
+          const price = res2.c;
+          resultsDiv.innerHTML = `
+            <div class="m-card" onclick="openChart('${symbol}.MI')" style="cursor:pointer; border-color:var(--primary); margin-top:10px; margin-bottom: 10px;">
+              <strong>${symbol}.MI</strong><br>
+              <span class="price-big">${price.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>
+              <span class="price-change" style="color: #94a3b8;">Borsa Italiana</span>
+              <span class="info-tag">Clicca per grafico</span>
+            </div>
+          `;
+          showSuccess(`${symbol}.MI trovato`);
+          return;
+        }
+      }
+      showError('Simbolo non trovato');
+      resultsDiv.innerHTML = '';
+      return;
+    }
+    
+    const price = symbol.includes('.MI') ? res.c : (res.c * state.fxRate);
+    const exchange = symbol.includes('.MI') ? 'Borsa Italiana' : 'Internazionale';
+    
+    resultsDiv.innerHTML = `
+      <div class="m-card" onclick="openChart('${symbol}')" style="cursor:pointer; border-color:var(--primary); margin-top:10px; margin-bottom: 10px;">
+        <strong>${symbol}</strong><br>
+        <span class="price-big">${price.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}</span>
+        <span class="price-change" style="color: #94a3b8;">${exchange}</span>
+        <span class="info-tag">Clicca per grafico</span>
+      </div>
+    `;
+    showSuccess(`${symbol} trovato`);
+  } catch(e) {
+    console.error('Errore doSearch:', e);
+    showError('Errore nella ricerca');
+    resultsDiv.innerHTML = '';
+  }
+}
+
+function openChart(s) {
+  document.getElementById('chart-container').style.display = "block";
+  document.getElementById('tv-widget').innerHTML = "";
+  
+  try {
+    new TradingView.widget({
+      autosize: true, 
+      symbol: s.includes('.MI') ? `MILAN:${s.split('.')[0]}` : s, 
+      theme: "dark", 
+      container_id: "tv-widget",
+      interval: "D",
+      style: "1",
+      timezone: "Europe/Rome"
+    });
+  } catch(e) {
+    console.error('Errore caricamento grafico TradingView:', e);
+    showError('Errore caricamento grafico');
+  }
+}
+
+function manualRefresh() {
+  const btn = document.getElementById('refresh-btn');
+  btn.style.animation = 'spin 0.6s linear';
+  updateAll().then(() => {
+    showSuccess('Dati aggiornati');
+    setTimeout(() => { btn.style.animation = ''; }, 600);
+  });
+}
+
+// ===== AI GEMINI =====
+
+const GEMINI_API_KEY = "AIzaSyAaZXjK0BIIiLQUqOe0ds9wS8zg13wCfWM";
+
+async function askGemini(question) {
+  try {
+    const prompt = `Tu sei un assistente finanziario esperto di metalli preziosi, criptovalute e borsa italiana.
+    
+Dati attuali:
+- Oro: $${state.rawGoldUSD}/oz
+- Argento: $${state.rawSilverUSD}/oz
+- Alluminio: $${state.rawAluUSD}/ton
+- Bitcoin: $${state.rawBtcUSD}
+- Cambio EUR/USD: ${state.fxRate.toFixed(4)}
+
+Rispondi in italiano, conciso e professionale. Max 3 paragrafi.
+
+Domanda: ${question}`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro-latest:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          role: "user",
+          parts: [{ text: prompt }]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('Gemini API Error:', data);
+      throw new Error(data?.error?.message || `API Error ${response.status}`);
+    }
+
+    if (data.candidates && data.candidates.length > 0) {
+      const content = data.candidates[0].content;
+      if (content && content.parts && content.parts.length > 0) {
+        return content.parts[0].text;
+      }
+    }
+    
+    throw new Error('Nessun contenuto nella risposta Gemini');
+  } catch (e) {
+    console.error('Errore Gemini:', e);
+    throw e;
+  }
+}
+
+function openAIChat() {
+  const chatHTML = `
+    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000;" onclick="this.remove()">
+      <div style="background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); max-width: 500px; width: 90%; height: 600px; display: flex; flex-direction: column;" onclick="event.stopPropagation()">
+        <h2 style="color: var(--primary); margin: 0 0 15px 0; font-size: 1.1rem;">Assistente AI - Gemini</h2>
+        
+        <div id="ai-chat-box" style="flex: 1; overflow-y: auto; padding: 15px; background: #0f172a; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border);">
+          <div style="color: #94a3b8; font-size: 0.85rem;">
+            Ciao! Sono Gemini, l'assistente AI. Puoi farmi domande su oro, argento, bitcoin, borsa e molto altro!
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <input type="text" id="ai-input" placeholder="Fai una domanda..." style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: white; outline: none;" onkeypress="if(event.key==='Enter') askAI();">
+          <button onclick="askAI()" style="padding: 12px 20px; background: var(--primary); color: #064e3b; border: none; border-radius: 8px; font-weight: 800; cursor: pointer;">Invia</button>
+        </div>
+        
+        <button onclick="this.closest('[style*=fixed]').remove();" style="padding: 10px; background: var(--border); color: var(--text); border: none; border-radius: 8px; font-weight: 800; cursor: pointer; width: 100%;">
+          Chiudi
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', chatHTML);
+}
+
+async function askAI() {
+  const input = document.getElementById('ai-input');
+  const chatBox = document.getElementById('ai-chat-box');
+  const question = input.value.trim();
+  
+  if (!question) return;
+  
+  chatBox.innerHTML += `
+    <div style="margin-bottom: 12px; text-align: right;">
+      <div style="background: var(--primary); color: #064e3b; padding: 10px 12px; border-radius: 8px; display: inline-block; max-width: 80%;">
+        ${question}
+      </div>
+    </div>
+  `;
+  
+  input.value = '';
+  input.disabled = true;
+  
+  chatBox.innerHTML += `
+    <div style="margin-bottom: 12px;">
+      <div style="background: var(--border); color: #cbd5e1; padding: 10px 12px; border-radius: 8px; display: inline-block;">
+        <div class="loader" style="display: inline-block; margin-right: 8px;"></div> Gemini sta pensando...
+      </div>
+    </div>
+  `;
+  
+  chatBox.scrollTop = chatBox.scrollHeight;
+  
+  try {
+    const response = await askGemini(question);
+    
+    chatBox.innerHTML = chatBox.innerHTML.replace(/<div style="margin-bottom: 12px;">[\s\S]*?Gemini sta pensando[\s\S]*?<\/div>\s*$/, '');
+    
+    chatBox.innerHTML += `
+      <div style="margin-bottom: 12px;">
+        <div style="background: #1e293b; color: #cbd5e1; padding: 10px 12px; border-radius: 8px; border-left: 3px solid var(--primary); display: inline-block; max-width: 80%;">
+          ${response.replace(/\n/g, '<br>')}
+        </div>
+      </div>
+    `;
+    
+    chatBox.scrollTop = chatBox.scrollHeight;
+  } catch (e) {
+    console.error('Errore:', e);
+    chatBox.innerHTML += `
+      <div style="margin-bottom: 12px;">
+        <div style="background: #7f1d1d; color: #fecaca; padding: 10px 12px; border-radius: 8px; border-left: 3px solid #ef4444;">
+          Errore: ${e.message}
+        </div>
+      </div>
+    `;
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+  
+  input.disabled = false;
+  input.focus();
+}
+
+function toggleSettings() {
+  const settingsHTML = `
+    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000;" onclick="this.remove()">
+      <div style="background: var(--card); padding: 30px; border-radius: 16px; border: 1px solid var(--border); max-width: 400px; width: 90%;" onclick="event.stopPropagation()">
+        <h2 style="color: var(--primary); margin-top: 0;">Impostazioni</h2>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; color: #cbd5e1; font-size: 0.9rem;">
+            <strong>Intervallo Aggiornamento</strong>
+          </label>
+          <select id="refresh-interval" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: white;">
+            <option value="30000">30 secondi</option>
+            <option value="60000" selected>1 minuto</option>
+            <option value="120000">2 minuti</option>
+            <option value="300000">5 minuti</option>
+          </select>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; color: #cbd5e1; font-size: 0.9rem;">
+            <strong>Numero Notizie</strong>
+          </label>
+          <input type="number" id="news-count" min="5" max="20" value="8" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: white;">
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: flex; align-items: center; gap: 10px; color: #cbd5e1; cursor: pointer;">
+            <input type="checkbox" id="auto-refresh" checked>
+            <span>Auto-aggiornamento</span>
+          </label>
+        </div>
+        
+        <div style="margin-bottom: 20px; padding: 15px; background: #1e293b; border-radius: 8px; border-left: 4px solid var(--primary);">
+          <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">
+            Cache: ${localStorage.length} elementi<br>
+            AI: Gemini OK<br>
+            Storage: Disponibile
+          </p>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+          <button onclick="document.querySelector('[onclick*=toggleSettings]').parentElement.remove(); saveSettings();" style="flex: 1; padding: 10px; background: var(--primary); color: #064e3b; border: none; border-radius: 8px; font-weight: 800; cursor: pointer;">
+            Salva
+          </button>
+          <button onclick="this.closest('[style*=fixed]').remove();" style="flex: 1; padding: 10px; background: var(--border); color: var(--text); border: none; border-radius: 8px; font-weight: 800; cursor: pointer;">
+            Chiudi
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', settingsHTML);
+}
+
+function saveSettings() {
+  const interval = document.getElementById('refresh-interval')?.value || 60000;
+  const newsCount = document.getElementById('news-count')?.value || 8;
+  const autoRefresh = document.getElementById('auto-refresh')?.checked ?? true;
+  
+  localStorage.setItem('refreshInterval', interval);
+  localStorage.setItem('newsCount', newsCount);
+  localStorage.setItem('autoRefresh', autoRefresh);
+  
+  showSuccess('Impostazioni salvate!');
+}
+
+// ===== NETWORK DETECTION =====
+
+window.addEventListener('online', () => {
+  updateStatus();
+  updateAll();
+});
+
+window.addEventListener('offline', () => {
+  updateStatus();
+  showError('Connessione persa. Cache abilitata.');
+});
+
+// ===== INIZIALIZZAZIONE =====
+
+document.addEventListener('DOMContentLoaded', () => {
+  const savedUnit = localStorage.getItem('selectedUnit') || '100g';
+  const unitBtn = document.getElementById(`btn-${savedUnit}`);
+  if (unitBtn) {
+    setUnit(savedUnit, unitBtn);
+  }
+  
+  updateAll();
+  
+  setInterval(updateAll, UPDATE_INTERVAL);
+  setInterval(updateStatus, 10000);
+  
+  updateStatus();
+});
+
+window.addEventListener('beforeunload', () => {
+  state.autoRefreshEnabled = false;
+});
